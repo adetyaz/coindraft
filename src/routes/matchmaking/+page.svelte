@@ -53,8 +53,32 @@
 			return;
 		}
 
-		// Poll for match every 3s
+		// Poll for match every 3s, with bot fallback after 30s
 		pollTimer = setInterval(async () => {
+			const elapsedMs = Date.now() - searchStartTime;
+
+			// Bot fallback after 30 seconds
+			if (elapsedMs > 30_000) {
+				clearInterval(elapsedTimer);
+				if (pollTimer) clearInterval(pollTimer);
+				pollTimer = null;
+
+				// Create a contest with bot opponent
+				const botRes = await fetch('/api/contests', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ type: 'daily' })
+				});
+				const botData = await botRes.json();
+				if (botData.id) {
+					contestId = botData.id;
+					status = 'matched';
+					toast('No opponents online. Matched with bot.', 'success');
+					setTimeout(() => goto(`/draft?contestId=${contestId}`), 1500);
+				}
+				return;
+			}
+
 			const pollRes = await fetch('/api/matchmaking/status');
 			const pollData = await pollRes.json();
 			if (pollData.status === 'matched') {
