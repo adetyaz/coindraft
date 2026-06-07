@@ -53,7 +53,7 @@
 		};
 
 		// Solana
-		if (account.type === 'solana') {
+		if ((account as Record<string, unknown>).type === 'solana') {
 			const sol = (walletProvider as MaybeSolana)?.signMessage
 				? (walletProvider as MaybeSolana)
 				: w.solana;
@@ -182,25 +182,42 @@
 	onMount(() => {
 		if (data.user) return;
 
+		let retryCount = 0;
+		const MAX_RETRIES = 3;
+
 		function tick() {
 			walletConnected = !!getAppKitProvider();
+			if (signError && retryCount < MAX_RETRIES) {
+				retryCount++;
+				console.log('[Auth] Auto-retry attempt', retryCount);
+				lastAttemptedWallet = '';
+				signError = false;
+			}
 			void ensureWalletSession();
 		}
 
 		// Listen to AppKit account changes
-		const unsubAccount = appKit?.subscribe?.('accountsChanged', tick);
-		const unsubChain = appKit?.subscribe?.('chainChanged', tick);
+		const appKitAny = appKit as unknown as Record<string, unknown>;
+		const unsubAccount =
+			typeof appKitAny?.subscribe === 'function'
+				? (appKitAny.subscribe as (...args: unknown[]) => unknown)('accountsChanged', tick)
+				: undefined;
+		const unsubChain =
+			typeof appKitAny?.subscribe === 'function'
+				? (appKitAny.subscribe as (...args: unknown[]) => unknown)('chainChanged', tick)
+				: undefined;
 
-		// Initial check
-		tick();
+		// Initial check with delay to let AppKit fully initialize
+		const initTimer = window.setTimeout(tick, 500);
 
-		// Fallback poll
-		const t = window.setInterval(tick, 1500);
+		// Fallback poll — less frequent to avoid race conditions
+		const t = window.setInterval(tick, 3000);
 
 		return () => {
+			window.clearTimeout(initTimer);
 			window.clearInterval(t);
-			unsubAccount?.();
-			unsubChain?.();
+			if (typeof unsubAccount === 'function') unsubAccount();
+			if (typeof unsubChain === 'function') unsubChain();
 		};
 	});
 </script>
@@ -231,6 +248,18 @@
 				class="rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
 				class:bg-[#eeedfe]={page.url.pathname.startsWith('/manager')}
 				class:text-[#534ab7]={page.url.pathname.startsWith('/manager')}>manager</a
+			>
+			<a
+				href="/leagues"
+				class="rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
+				class:bg-[#eeedfe]={page.url.pathname.startsWith('/leagues')}
+				class:text-[#534ab7]={page.url.pathname.startsWith('/leagues')}>leagues</a
+			>
+			<a
+				href="/leaderboard"
+				class="rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
+				class:bg-[#eeedfe]={page.url.pathname.startsWith('/leaderboard')}
+				class:text-[#534ab7]={page.url.pathname.startsWith('/leaderboard')}>leaderboard</a
 			>
 			<a
 				href="/draft"

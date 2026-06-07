@@ -17,7 +17,9 @@ function extractPrice(snapshot: unknown): number {
 		s?.priceUsd,
 		s?.price_usd,
 		s?.latestPrice,
-		s?.market_data?.current_price?.usd
+		(s?.market_data as Record<string, unknown> | undefined)?.current_price
+			? ((s.market_data as Record<string, unknown>).current_price as Record<string, unknown>)?.usd
+			: undefined
 	];
 	for (const value of candidates) {
 		const n = Number(value);
@@ -48,7 +50,7 @@ export async function POST({ params, request, cookies }) {
 		.then((rows) => rows[0] ?? null);
 
 	if (!existingContest) return json({ error: 'Contest not found' }, { status: 404 });
-	if (existingContest.userAId !== parsed.userId) {
+	if (existingContest.userAId !== parsed.userId && existingContest.userBId !== parsed.userId) {
 		return json({ error: 'Forbidden' }, { status: 403 });
 	}
 
@@ -97,12 +99,16 @@ export async function POST({ params, request, cookies }) {
 		});
 	}
 
-	const startAt = new Date();
-	const endAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-	await db
-		.update(contests)
-		.set({ status: 'live', startAt, endAt })
-		.where(eq(contests.id, contestId));
+	// Only set contest live when userA (the creator) submits
+	// userB submits into an already-live contest
+	if (existingContest.userAId === parsed.userId) {
+		const startAt = new Date();
+		const endAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+		await db
+			.update(contests)
+			.set({ status: 'live', startAt, endAt })
+			.where(eq(contests.id, contestId));
+	}
 
 	return json({ ok: true, contestId, lineupId });
 }

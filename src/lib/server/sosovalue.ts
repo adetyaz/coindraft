@@ -60,7 +60,7 @@ export async function ssv<T>(
 // Named helpers — import these everywhere
 export const getTokens = () => ssv('/currencies', 86400); // 24h
 export const getSectors = () => ssv('/currencies/sector-spotlight', 300); // 5min
-export const getEtfHistory = (symbol: string) => ssv('/etfs/summary-history', 300, { symbol }); // 5min
+export const getEtfHistory = (symbol: string) => ssv('/etfs/summary-history', 300, { symbol, country_code: 'US' }); // 5min
 export const getNews = () => ssv('/news/featured', 900); // 15min
 export const getSnapshot = (id: string) => ssv(`/currencies/${id}/market-snapshot`, 60); // 60s
 

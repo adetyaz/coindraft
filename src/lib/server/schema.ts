@@ -1,4 +1,14 @@
-import { pgTable, uuid, text, integer, numeric, boolean, timestamp } from 'drizzle-orm/pg-core';
+import {
+	pgTable,
+	uuid,
+	text,
+	integer,
+	numeric,
+	boolean,
+	timestamp,
+	jsonb,
+	date
+} from 'drizzle-orm/pg-core';
 
 // ─── Users (Wallet-based) ────────────────────────────────────────────────────
 
@@ -9,6 +19,8 @@ export const users = pgTable('users', {
 	username: text('username').unique().notNull(), // auto-generated, user can update
 	xpTotal: integer('xp_total').default(0),
 	streak: integer('streak').default(0),
+	matchmakingStatus: text('matchmaking_status').default('idle'), // 'idle' | 'queued' | 'in_contest'
+	activeBoosts: jsonb('active_boosts').default('[]'), // [{ sector, expiresAt }]
 	createdAt: timestamp('created_at').defaultNow()
 });
 
@@ -53,4 +65,56 @@ export const lineupPicks = pgTable('lineup_picks', {
 	exitPrice: numeric('exit_price'), // price at contest resolution
 	pctChange: numeric('pct_change'), // ((exit - entry) / entry) * 100
 	score: numeric('score').default('0') // weighted score for this pick
+});
+
+// ─── Leagues ──────────────────────────────────────────────────────────────────
+
+export const leagues = pgTable('leagues', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	name: text('name').notNull(),
+	type: text('type').notNull(), // 'public' | 'private'
+	inviteCode: text('invite_code').unique(),
+	createdBy: uuid('created_by').references(() => users.id),
+	seasonStart: timestamp('season_start'),
+	seasonEnd: timestamp('season_end'),
+	createdAt: timestamp('created_at').defaultNow()
+});
+
+// ─── League Members ───────────────────────────────────────────────────────────
+
+export const leagueMembers = pgTable('league_members', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	leagueId: uuid('league_id').references(() => leagues.id),
+	userId: uuid('user_id').references(() => users.id),
+	wins: integer('wins').default(0),
+	losses: integer('losses').default(0),
+	points: integer('points').default(0),
+	joinedAt: timestamp('joined_at').defaultNow()
+});
+
+// ─── Gauntlet Questions ───────────────────────────────────────────────────────
+
+export const gauntletQuestions = pgTable('gauntlet_questions', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	question: text('question').notNull(),
+	options: jsonb('options').notNull(), // [{ label, value }]
+	correctAnswer: text('correct_answer').notNull(),
+	sector: text('sector'), // which sector this relates to
+	currencyId: text('currency_id'), // SoSoValue currency_id if token-specific
+	xpReward: integer('xp_reward').default(50),
+	boostSector: text('boost_sector'), // which draft slot gets boosted on correct answer
+	activeDate: date('active_date').notNull(),
+	createdAt: timestamp('created_at').defaultNow()
+});
+
+// ─── Gauntlet Attempts ────────────────────────────────────────────────────────
+
+export const gauntletAttempts = pgTable('gauntlet_attempts', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	userId: uuid('user_id').references(() => users.id),
+	questionId: uuid('question_id').references(() => gauntletQuestions.id),
+	answer: text('answer').notNull(),
+	correct: boolean('correct').notNull(),
+	xpEarned: integer('xp_earned').default(0),
+	attemptedAt: timestamp('attempted_at').defaultNow()
 });

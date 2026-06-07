@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { contests } from '$lib/server/schema';
-import { eq } from 'drizzle-orm';
+import { eq, or } from 'drizzle-orm';
 import { parseSessionToken } from '$lib/server/auth';
 
 export async function GET({ cookies }) {
@@ -11,7 +11,10 @@ export async function GET({ cookies }) {
 		return json([]);
 	}
 
-	const userContests = await db.select().from(contests).where(eq(contests.userAId, parsed.userId));
+	const userContests = await db
+		.select()
+		.from(contests)
+		.where(or(eq(contests.userAId, parsed.userId), eq(contests.userBId, parsed.userId)));
 
 	return json(userContests);
 }
@@ -30,7 +33,7 @@ export async function POST({ request, cookies }) {
 	const existing = await db
 		.select()
 		.from(contests)
-		.where(eq(contests.userAId, parsed.userId))
+		.where(or(eq(contests.userAId, parsed.userId), eq(contests.userBId, parsed.userId)))
 		.then((rows) => rows.find((c) => c.status === 'open' || c.status === 'live') ?? null);
 
 	if (existing) {

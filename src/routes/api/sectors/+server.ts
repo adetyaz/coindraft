@@ -28,7 +28,7 @@ const GAME_SECTORS = [
 
 export async function GET() {
 	try {
-		const raw = await getSectors() as {
+		const raw = (await getSectors()) as {
 			sector?: Array<{ name: string; change_pct_24h: number }>;
 			spotlight?: Array<{ name: string; change_pct_24h: number }>;
 		};

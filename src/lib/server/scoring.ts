@@ -36,7 +36,9 @@ export function calcLineupScore(picks: { score: number | string }[]): number {
 	return picks.reduce((sum, p) => sum + Number(p.score), 0);
 }
 
-export function detectEtfStreaks(history) {
+export function detectEtfStreaks(
+	history: Array<{ netFlow?: number; net_inflow?: number; date?: string }>
+) {
 	if (!Array.isArray(history) || history.length < 2) return [];
 
 	const alerts = [];

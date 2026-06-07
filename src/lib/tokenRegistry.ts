@@ -2,13 +2,10 @@
 // Hardcoded draft pool for Wave 1
 // Populate currency_id values after calling GET /currencies once
 
-export const SECTORS = ['L1', 'L2', 'Meme', 'DeFi', 'Wildcard'] as const
-export type Sector = (typeof SECTORS)[number]
+export const SECTORS = ['L1', 'L2', 'Meme', 'DeFi', 'Wildcard'] as const;
+export type Sector = (typeof SECTORS)[number];
 
-export const DRAFT_POOL: Record<
-	Sector,
-	{ symbol: string; name: string; currency_id: string }[]
-> = {
+export const DRAFT_POOL: Record<Sector, { symbol: string; name: string; currency_id: string }[]> = {
 	L1: [
 		{ symbol: 'SOL', name: 'Solana', currency_id: '' },
 		{ symbol: 'AVAX', name: 'Avalanche', currency_id: '' },
@@ -44,15 +41,15 @@ export const DRAFT_POOL: Record<
 		{ symbol: 'SEI', name: 'Sei', currency_id: '' },
 		{ symbol: 'TIA', name: 'Celestia', currency_id: '' }
 	]
-}
+};
 
 // Helper to get all tokens in the pool
 export function getAllDraftTokens() {
-	const all: any[] = []
+	const all: any[] = [];
 	SECTORS.forEach((sector) => {
 		DRAFT_POOL[sector].forEach((token) => {
-			all.push({ ...token, sector })
-		})
-	})
-	return all
+			all.push({ ...token, sector });
+		});
+	});
+	return all;
 }

@@ -1,7 +1,15 @@
 import { createAppKit } from '@reown/appkit';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import { SolanaAdapter } from '@reown/appkit-adapter-solana';
-import { mainnet, arbitrum, base, polygon, optimism, sepolia, baseSepolia } from '@reown/appkit/networks';
+import {
+	mainnet,
+	arbitrum,
+	base,
+	polygon,
+	optimism,
+	sepolia,
+	baseSepolia
+} from '@reown/appkit/networks';
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { PUBLIC_REOWN_PROJECT_ID } from '$env/static/public';
 
