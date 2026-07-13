@@ -1,8 +1,9 @@
 import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { gauntletQuestions, gauntletAttempts } from '$lib/server/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { gauntletAttempts } from '$lib/server/schema';
+import { eq, and } from 'drizzle-orm';
 import { parseSessionToken } from '$lib/server/auth';
+import { ensureTodaySeeded } from '$lib/server/gauntlet';
 
 export async function GET({ cookies }) {
 	const token = cookies.get('session');
@@ -11,16 +12,8 @@ export async function GET({ cookies }) {
 
 	const today = new Date().toISOString().split('T')[0];
 
-	const question = await db
-		.select()
-		.from(gauntletQuestions)
-		.where(eq(gauntletQuestions.activeDate, sql`${today}::date`))
-		.limit(1)
-		.then((rows) => rows[0] ?? null);
-
-	if (!question) {
-		return json({ error: 'No question for today' }, { status: 404 });
-	}
+	// Cron should normally handle this, but self-heal if it hasn't run yet
+	const question = await ensureTodaySeeded(today);
 
 	const attempt = await db
 		.select()

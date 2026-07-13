@@ -118,3 +118,14 @@ export const gauntletAttempts = pgTable('gauntlet_attempts', {
 	xpEarned: integer('xp_earned').default(0),
 	attemptedAt: timestamp('attempted_at').defaultNow()
 });
+
+// ─── Matchmaking Queue ────────────────────────────────────────────────────────
+// Backed by Postgres (not in-memory) so it survives serverless cold starts
+
+export const matchmakingQueue = pgTable('matchmaking_queue', {
+	userId: uuid('user_id')
+		.primaryKey()
+		.references(() => users.id),
+	contestType: text('contest_type').notNull(),
+	queuedAt: timestamp('queued_at').defaultNow().notNull()
+});

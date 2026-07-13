@@ -4,9 +4,7 @@ import { users, contests } from '$lib/server/schema';
 import { eq, and, or } from 'drizzle-orm';
 import { parseSessionToken } from '$lib/server/auth';
 
-import { queue } from '$lib/server/matchmaking';
-
-const QUEUE_TIMEOUT_MS = 30_000; // 30s timeout -> fallback to bot
+import { findOpponent, enqueue } from '$lib/server/matchmaking';
 
 export async function POST({ request, cookies }) {
 	const token = cookies.get('session');
@@ -37,23 +35,9 @@ export async function POST({ request, cookies }) {
 	}
 
 	// Try to find an opponent in the queue
-	const now = Date.now();
-	let opponentId: string | null = null;
-
-	for (const [queuedUserId, data] of queue.entries()) {
-		if (queuedUserId === parsed.userId) continue;
-		if (data.contestType !== contestType) continue;
-		if (now - data.queuedAt > QUEUE_TIMEOUT_MS) {
-			queue.delete(queuedUserId);
-			continue;
-		}
-		opponentId = queuedUserId;
-		break;
-	}
+	const opponentId = await findOpponent(parsed.userId, contestType);
 
 	if (opponentId) {
-		queue.delete(opponentId);
-
 		const [newContest] = await db
 			.insert(contests)
 			.values({
@@ -73,7 +57,7 @@ export async function POST({ request, cookies }) {
 		return json({ status: 'matched', contestId: newContest.id, opponentId });
 	}
 
-	queue.set(parsed.userId, { queuedAt: now, contestType });
+	await enqueue(parsed.userId, contestType);
 	await db.update(users).set({ matchmakingStatus: 'queued' }).where(eq(users.id, parsed.userId));
 
 	return json({ status: 'waiting', message: 'Looking for an opponent...' });
