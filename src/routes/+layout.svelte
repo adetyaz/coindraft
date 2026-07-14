@@ -244,12 +244,6 @@
 				class:text-[#534ab7]={page.url.pathname.startsWith('/dashboard')}>dashboard</a
 			>
 			<a
-				href="/manager"
-				class="rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
-				class:bg-[#eeedfe]={page.url.pathname.startsWith('/manager')}
-				class:text-[#534ab7]={page.url.pathname.startsWith('/manager')}>manager</a
-			>
-			<a
 				href="/leagues"
 				class="rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
 				class:bg-[#eeedfe]={page.url.pathname.startsWith('/leagues')}

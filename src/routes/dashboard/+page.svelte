@@ -7,14 +7,29 @@
 	let contests = $state<Array<Record<string, unknown>>>([]);
 	let sectors = $state<Array<Record<string, unknown>>>([]);
 	let alerts = $state<Array<Record<string, unknown>>>([]);
+	let tokens = $state<
+		{
+			currency_id: string;
+			symbol?: string;
+			name?: string;
+			price: number | null;
+			change24h: number | null;
+			rank: number | null;
+		}[]
+	>([]);
+	let news = $state<{ title?: string; date?: string; source?: string; url?: string }[]>([]);
 	let loading = $state(true);
 	let actionError = $state('');
 
-	let streak = $derived(contests.filter((contest) => contest.status === 'resolved').length);
-	let winRate = $derived(68);
+	const user = $derived(page.data.user);
+	const resolvedContests = $derived(contests.filter((c) => c.status === 'resolved'));
+	const winCount = $derived(resolvedContests.filter((c) => c.winnerId === user?.id).length);
+	const winRate = $derived(
+		resolvedContests.length > 0 ? Math.round((winCount / resolvedContests.length) * 100) : 0
+	);
 
 	onMount(async () => {
-		await Promise.all([loadContests(), loadSectors(), loadAlerts()]);
+		await Promise.all([loadContests(), loadSectors(), loadAlerts(), loadTokens(), loadNews()]);
 		loading = false;
 	});
 
@@ -51,6 +66,27 @@
 		}
 	}
 
+	async function loadTokens() {
+		try {
+			const res = await fetch('/api/tokens');
+			if (res.ok) tokens = await res.json();
+		} catch (error) {
+			console.error('Failed to load tokens:', error);
+		}
+	}
+
+	async function loadNews() {
+		try {
+			const res = await fetch('/api/news');
+			if (res.ok) {
+				const data = await res.json();
+				news = Array.isArray(data) ? data.slice(0, 5) : [];
+			}
+		} catch (error) {
+			console.error('Failed to load news:', error);
+		}
+	}
+
 	async function createContest() {
 		actionError = '';
 		try {
@@ -79,6 +115,13 @@
 		const signed = value >= 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
 		return `${signed}%`;
 	}
+
+	function avatarBg(sym: string): string {
+		const colors = ['#534AB7', '#0F6E56', '#3B82F6', '#D97706', '#993C1D', '#7C3AED'];
+		let h = 0;
+		for (const c of sym) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+		return colors[h % colors.length];
+	}
 </script>
 
 <div class="flex flex-col gap-3">
@@ -86,24 +129,28 @@
 		<div class="rounded-xl border border-black/10 bg-white px-3.5 py-3">
 			<p class="text-[11px] font-medium text-[#888780] uppercase">Active Contests</p>
 			<div class="mt-2 flex items-center justify-between gap-2">
-				<h2 class="text-[28px] leading-none font-medium">{contests.length}</h2>
+				<h2 class="text-[28px] leading-none font-medium">
+					{contests.filter((c) => c.status !== 'resolved').length}
+				</h2>
 				<span class="rounded-full bg-[#e1f5ee] px-2 py-0.5 text-[11px] font-medium text-[#0f6e56]"
 					>In progress</span
 				>
 			</div>
 		</div>
 		<div class="rounded-xl border border-black/10 bg-white px-3.5 py-3">
-			<p class="text-[11px] font-medium text-[#888780] uppercase">Current Streak</p>
+			<p class="text-[11px] font-medium text-[#888780] uppercase">Resolved Contests</p>
 			<div class="mt-2 flex items-center justify-between gap-2">
-				<h2 class="text-[28px] leading-none font-medium">{streak} Days</h2>
-				<span class="text-lg">🔥</span>
+				<h2 class="text-[28px] leading-none font-medium">{resolvedContests.length}</h2>
+				<span class="text-lg">🏁</span>
 			</div>
 		</div>
 		<div class="rounded-xl border border-black/10 bg-white px-3.5 py-3">
 			<p class="text-[11px] font-medium text-[#888780] uppercase">Win Rate</p>
 			<div class="mt-2 flex items-center justify-between gap-2">
-				<h2 class="text-[28px] leading-none font-medium">{winRate}%</h2>
-				<span class="text-xs text-[#888780]">{page.data.user?.username ?? 'player'}</span>
+				<h2 class="text-[28px] leading-none font-medium">
+					{resolvedContests.length > 0 ? `${winRate}%` : '—'}
+				</h2>
+				<span class="text-xs text-[#888780]">{user?.username ?? 'player'}</span>
 			</div>
 		</div>
 	</section>
@@ -186,6 +233,92 @@
 	<!-- Gauntlet -->
 	<Gauntlet />
 
+	<div class="grid grid-cols-2 gap-3 max-[900px]:grid-cols-1">
+		<!-- Hot Tokens -->
+		<section class="rounded-xl border border-black/10 bg-white px-3.5 py-3">
+			<div class="mb-2.5 flex items-center justify-between">
+				<h3 class="text-[11px] font-medium text-[#888780] uppercase">Hot Tokens</h3>
+				<small class="text-[11px] text-[#888780]">Top movers</small>
+			</div>
+			{#if loading}
+				<p class="text-xs text-[#888780]">Loading tokens...</p>
+			{:else if tokens.length === 0}
+				<p class="text-xs text-[#888780]">Token data unavailable.</p>
+			{:else}
+				<div class="flex flex-col divide-y divide-[#f0f0f0]">
+					{#each tokens.slice(0, 5) as token (token.currency_id)}
+						<div class="flex items-center justify-between py-2">
+							<div class="flex items-center gap-2.5">
+								<div
+									class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-white"
+									style="background: {avatarBg(token.symbol ?? '')}"
+								>
+									{(token.symbol ?? '?').charAt(0).toUpperCase()}
+								</div>
+								<div>
+									<p class="text-[13px] font-semibold text-[#1c1b22]">
+										{(token.symbol ?? '').toUpperCase()}
+									</p>
+									<p class="text-[11px] text-[#888780]">{token.name}</p>
+								</div>
+							</div>
+							<div class="text-right">
+								<p class="text-[13px] font-medium text-[#1c1b22]">
+									{token.price != null
+										? token.price >= 1000
+											? `$${token.price.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+											: `$${token.price.toFixed(token.price < 1 ? 4 : 2)}`
+										: '—'}
+								</p>
+								{#if token.change24h != null}
+									<span
+										class="text-[11px] font-medium"
+										style="color: {token.change24h >= 0 ? '#0F6E56' : '#993C1D'}"
+										>{formatPct(token.change24h)}</span
+									>
+								{/if}
+							</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
+			<div class="mt-2 border-t border-[#f0f0f0] pt-2">
+				<a href="/draft" class="text-xs font-medium text-[#534ab7] no-underline hover:underline"
+					>Draft a token from this list →</a
+				>
+			</div>
+		</section>
+
+		<!-- Scout Report (News) -->
+		<section class="rounded-xl border border-black/10 bg-white px-3.5 py-3">
+			<div class="mb-2.5 flex items-center justify-between">
+				<h3 class="text-[11px] font-medium text-[#888780] uppercase">Scout Report</h3>
+				<small class="text-[11px] text-[#888780]">Live Feed</small>
+			</div>
+			{#if loading}
+				<p class="text-xs text-[#888780]">Loading news...</p>
+			{:else if news.length === 0}
+				<p class="text-xs text-[#888780]">No news available.</p>
+			{:else}
+				<div class="flex flex-col divide-y divide-[#f0f0f0]">
+					{#each news as item, i (i)}
+						<div class="flex gap-2 py-2">
+							<div class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#534ab7]"></div>
+							<div>
+								<p class="text-[13px] leading-snug font-medium text-[#1c1b22]">
+									{item.title ?? 'Market update'}
+								</p>
+								<p class="text-[11px] text-[#888780]">
+									{item.source ?? 'SoSoValue'}{item.date ? ` · ${item.date}` : ''}
+								</p>
+							</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</section>
+	</div>
+
 	<section class="rounded-xl border border-black/10 bg-white px-3.5 py-3">
 		<div class="mb-3 flex items-center justify-between">
 			<h3 class="text-[11px] font-medium text-[#888780] uppercase">My Contests</h3>
@@ -194,6 +327,9 @@
 				onclick={createContest}>+ New Draft</button
 			>
 		</div>
+		{#if actionError}
+			<p class="mb-2 text-[11px] text-[#993c1d]">{actionError}</p>
+		{/if}
 		{#if loading}
 			<p class="text-xs text-[#888780]">Loading...</p>
 		{:else if contests.length === 0}
