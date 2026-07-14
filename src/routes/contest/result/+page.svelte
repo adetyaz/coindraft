@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import { toast } from '$lib/toast';
 	import Toast from '$lib/components/Toast.svelte';
 	import { BADGE_MAP } from '$lib/badges';
@@ -23,10 +24,11 @@
 	let error = $state('');
 	let aiBreakdown = $state('');
 	let aiLoading = $state(false);
+	let contestId = $state('');
 
 	onMount(async () => {
 		const params = new URLSearchParams(window.location.search);
-		const contestId = params.get('contestId');
+		contestId = params.get('contestId') ?? '';
 
 		if (!contestId) {
 			loading = false;
@@ -220,6 +222,16 @@
 			</p>
 		{/if}
 	</section>
+
+	{#if !result.isPaper && contestId && page.data.user?.id}
+		<a
+			href={`/share/${contestId}?u=${page.data.user.id}`}
+			target="_blank"
+			rel="noopener noreferrer"
+			class="grid h-11 place-items-center rounded-lg border border-black/10 bg-white text-[13px] font-medium text-[#534ab7] no-underline"
+			>Share Result</a
+		>
+	{/if}
 
 	<section class="grid grid-cols-2 gap-2.5 max-[760px]:grid-cols-1">
 		<a
