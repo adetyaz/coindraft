@@ -88,10 +88,12 @@ export async function GET({ params, cookies }) {
 	}
 
 	const xpMultiplier = contest.type === 'weekly' ? 2 : 1;
-	const newBadges = didWin ? await awardWinBadges(parsed.userId) : [];
+	// Paper (practice) contests don't count toward real achievements
+	const newBadges = didWin && !contest.isPaper ? await awardWinBadges(parsed.userId) : [];
 
 	return json({
 		contestId,
+		isPaper: Boolean(contest.isPaper),
 		status: didWin ? 'YOU WON' : 'YOU LOST',
 		xp: (didWin ? 250 : 60) * xpMultiplier,
 		yourScore: Number(Number(myLineup.finalScore ?? 0).toFixed(0)),

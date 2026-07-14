@@ -8,7 +8,8 @@
 		status: 'YOU WON',
 		xp: 250,
 		yourScore: 1482,
-		opponentScore: 1215
+		opponentScore: 1215,
+		isPaper: false
 	});
 
 	let breakdown = $state([
@@ -40,7 +41,8 @@
 				status: data.status,
 				xp: data.xp,
 				yourScore: data.yourScore,
-				opponentScore: data.opponentScore
+				opponentScore: data.opponentScore,
+				isPaper: Boolean(data.isPaper)
 			};
 			if (Array.isArray(data.breakdown) && data.breakdown.length > 0) {
 				breakdown = data.breakdown;
@@ -105,12 +107,21 @@
 		class:bg-[#993c1d]={result.status === 'YOU LOST'}
 	>
 		<div>
-			<p class="text-[11px] uppercase opacity-85">Match Result</p>
+			<div class="flex items-center gap-2">
+				<p class="text-[11px] uppercase opacity-85">Match Result</p>
+				{#if result.isPaper}
+					<span class="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase"
+						>Practice mode</span
+					>
+				{/if}
+			</div>
 			<h1 class="text-[40px] leading-none font-medium max-[760px]:text-[30px]">{result.status}</h1>
-			<p class="mt-1 text-xs opacity-90">League Record: 12-4-0</p>
+			{#if !result.isPaper}
+				<p class="mt-1 text-xs opacity-90">League Record: 12-4-0</p>
+			{/if}
 		</div>
 		<div class="w-fit rounded-lg bg-white/15 px-3 py-2 text-base font-medium">
-			+{result.xp} XP earned
+			+{result.xp} {result.isPaper ? 'practice XP (not counted toward real XP)' : 'XP earned'}
 		</div>
 		<div class="flex items-center gap-6 max-[760px]:gap-3.5">
 			<div>

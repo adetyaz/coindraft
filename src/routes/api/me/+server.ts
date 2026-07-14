@@ -23,6 +23,7 @@ export async function GET({ cookies }) {
 		username: user.username,
 		walletAddress: user.walletAddress,
 		xpTotal: user.xpTotal,
+		paperXpTotal: user.paperXpTotal,
 		streak: user.streak,
 		matchmakingStatus: user.matchmakingStatus,
 		activeBoosts: user.activeBoosts || []

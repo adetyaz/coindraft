@@ -105,13 +105,13 @@
 		}
 	}
 
-	async function createContest(type: 'daily' | 'weekly' = 'daily') {
+	async function createContest(type: 'daily' | 'weekly' = 'daily', mode: 'real' | 'paper' = 'real') {
 		actionError = '';
 		try {
 			const res = await fetch('/api/contests', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ type })
+				body: JSON.stringify({ type, mode })
 			});
 			if (!res.ok) {
 				const payload = await res.json().catch(() => ({}));
@@ -122,7 +122,8 @@
 				throw new Error(payload?.error ?? 'Failed to create contest');
 			}
 			const contest = await res.json();
-			window.location.href = `/draft?contestId=${contest.id}&type=${contest.type}`;
+			const modeParam = contest.isPaper ? '&mode=paper' : '';
+			window.location.href = `/draft?contestId=${contest.id}&type=${contest.type}${modeParam}`;
 		} catch (error) {
 			actionError = (error as Error)?.message ?? 'Failed to create contest';
 			console.error('Failed to create contest:', error);
@@ -172,6 +173,24 @@
 			</div>
 		</div>
 	</section>
+
+	{#if !loading && contests.length === 0}
+		<!-- New-user nudge toward Paper Mode -->
+		<section class="flex items-center justify-between gap-3 rounded-xl bg-[#eeedfe] p-4">
+			<div>
+				<h1 class="text-base leading-[1.2] font-semibold text-[#534ab7]">New here? Try practice mode first</h1>
+				<p class="mt-1 text-xs text-[#5d5d6b]">
+					Draft against a bot with zero stakes — no real XP, just a feel for how scoring works.
+				</p>
+			</div>
+			<button
+				class="h-10 shrink-0 cursor-pointer rounded-lg border-0 bg-[#534ab7] px-4 text-sm font-medium text-white transition-colors hover:bg-[#453fa0]"
+				onclick={() => createContest('daily', 'paper')}
+			>
+				Try Practice Mode
+			</button>
+		</section>
+	{/if}
 
 	<!-- Matchmaking CTA -->
 	<section class="flex items-center justify-between gap-3 rounded-xl bg-[#0F6E56] p-4 text-white">
@@ -374,6 +393,10 @@
 					class="h-7 cursor-pointer rounded-lg border-0 bg-[#fef3c7] px-3 text-[12px] font-medium text-[#d97706]"
 					onclick={() => createContest('weekly')}>+ Weekly</button
 				>
+				<button
+					class="h-7 cursor-pointer rounded-lg border-0 bg-[#e1f5ee] px-3 text-[12px] font-medium text-[#0f6e56]"
+					onclick={() => createContest('daily', 'paper')}>+ Practice</button
+				>
 			</div>
 		</div>
 		{#if actionError}
@@ -407,6 +430,12 @@
 							<span class="text-[13px] text-[#333]"
 								>{c.type === 'weekly' ? 'Weekly' : 'Daily'} Contest</span
 							>
+							{#if c.isPaper}
+								<span
+									class="rounded-full bg-[#e1f5ee] px-2 py-0.5 text-[10px] font-medium text-[#0f6e56]"
+									>Practice</span
+								>
+							{/if}
 							<span class="text-[11px] text-[#888780]">{String(c.id ?? '').slice(0, 8)}…</span>
 						</div>
 						{#if c.status === 'resolved'}
@@ -417,7 +446,7 @@
 							>
 						{:else}
 							<a
-								href={`/draft?contestId=${c.id}&type=${c.type ?? 'daily'}`}
+								href={`/draft?contestId=${c.id}&type=${c.type ?? 'daily'}${c.isPaper ? '&mode=paper' : ''}`}
 								class="h-7 rounded-lg bg-[#534ab7] px-3 text-[12px] leading-7 font-medium text-[#eeedfe] no-underline"
 								>Continue Draft</a
 							>

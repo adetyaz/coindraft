@@ -38,6 +38,7 @@
 	let activeBoosts = $state<Map<string, boolean>>(new Map());
 	let highlightId = $state('');
 	let contestType = $state<'daily' | 'weekly'>('daily');
+	let isPaper = $state(false);
 
 	// ── Sector visual config ───────────────────────────────────────────
 	const SECTOR_STYLE: Record<string, { color: string; bg: string; dimBg: string }> = {
@@ -54,6 +55,7 @@
 		contestId = p.get('contestId') ?? '';
 		highlightId = p.get('highlight') ?? '';
 		contestType = p.get('type') === 'weekly' ? 'weekly' : 'daily';
+		isPaper = p.get('mode') === 'paper';
 		loadData();
 		timer = setInterval(() => {
 			timeLeft = Math.max(0, timeLeft - 1);
@@ -240,6 +242,12 @@
 						<span
 							class="rounded-full bg-[#fef3c7] px-2 py-0.5 text-[10px] font-bold text-[#d97706] uppercase"
 							>7-day · 2x XP</span
+						>
+					{/if}
+					{#if isPaper}
+						<span
+							class="rounded-full bg-[#e1f5ee] px-2 py-0.5 text-[10px] font-bold text-[#0f6e56] uppercase"
+							>Practice mode</span
 						>
 					{/if}
 				</div>

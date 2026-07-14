@@ -18,6 +18,7 @@ export const users = pgTable('users', {
 	chainType: text('chain_type').notNull(), // 'evm' | 'solana'
 	username: text('username').unique().notNull(), // auto-generated, user can update
 	xpTotal: integer('xp_total').default(0),
+	paperXpTotal: integer('paper_xp_total').default(0), // practice-mode XP, tracked separately from real XP
 	streak: integer('streak').default(0),
 	matchmakingStatus: text('matchmaking_status').default('idle'), // 'idle' | 'queued' | 'in_contest'
 	activeBoosts: jsonb('active_boosts').default('[]'), // [{ sector, expiresAt }]
@@ -34,6 +35,7 @@ export const contests = pgTable('contests', {
 	userBId: uuid('user_b_id').references(() => users.id),
 	type: text('type').default('daily'), // 'daily' | 'weekly'
 	status: text('status').default('open'), // 'open' | 'live' | 'resolved'
+	isPaper: boolean('is_paper').default(false), // practice mode — bot-only, no real XP/streak/badges/league impact
 	startAt: timestamp('start_at'),
 	endAt: timestamp('end_at'),
 	winnerId: uuid('winner_id').references(() => users.id)

@@ -98,12 +98,17 @@ export async function resolveContest(
 			.limit(1)
 			.then((rows) => rows[0] ?? null);
 		if (winner) {
+			// Paper (practice) contests earn practice XP only — no real XP, no streak impact
 			await db
 				.update(users)
-				.set({
-					xpTotal: (winner.xpTotal ?? 0) + 250 * xpMultiplier,
-					streak: (winner.streak ?? 0) + 1
-				})
+				.set(
+					contest.isPaper
+						? { paperXpTotal: (winner.paperXpTotal ?? 0) + 250 * xpMultiplier }
+						: {
+								xpTotal: (winner.xpTotal ?? 0) + 250 * xpMultiplier,
+								streak: (winner.streak ?? 0) + 1
+							}
+				)
 				.where(eq(users.id, winnerId));
 		}
 	}
@@ -118,7 +123,11 @@ export async function resolveContest(
 		if (loser) {
 			await db
 				.update(users)
-				.set({ xpTotal: (loser.xpTotal ?? 0) + 60 * xpMultiplier, streak: 0 })
+				.set(
+					contest.isPaper
+						? { paperXpTotal: (loser.paperXpTotal ?? 0) + 60 * xpMultiplier }
+						: { xpTotal: (loser.xpTotal ?? 0) + 60 * xpMultiplier, streak: 0 }
+				)
 				.where(eq(users.id, loserId));
 		}
 	}
