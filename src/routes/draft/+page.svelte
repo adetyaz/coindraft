@@ -36,6 +36,7 @@
 	let timeLeft = $state(45 * 60);
 	let timer: ReturnType<typeof setInterval> | null = null;
 	let activeBoosts = $state<Map<string, boolean>>(new Map());
+	let highlightId = $state('');
 
 	// ── Sector visual config ───────────────────────────────────────────
 	const SECTOR_STYLE: Record<string, { color: string; bg: string; dimBg: string }> = {
@@ -50,6 +51,7 @@
 	onMount(() => {
 		const p = new URLSearchParams(window.location.search);
 		contestId = p.get('contestId') ?? '';
+		highlightId = p.get('highlight') ?? '';
 		loadData();
 		timer = setInterval(() => {
 			timeLeft = Math.max(0, timeLeft - 1);
@@ -71,6 +73,15 @@
 			]);
 			if (!tRes.ok) throw new Error('Failed to load tokens');
 			tokens = await tRes.json();
+			if (highlightId) {
+				const match = tokens.find((t) => t.currency_id === highlightId);
+				if (match?.symbol) {
+					search = match.symbol;
+					queueMicrotask(() =>
+						document.getElementById('token-pool')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+					);
+				}
+			}
 			if (sRes.ok) {
 				const secs: SectorInfo[] = await sRes.json();
 				sectorChanges = new Map(secs.map((s) => [s.id, s.change]));
@@ -745,12 +756,14 @@
 					{/if}
 					{#each filteredTokens as token (token.currency_id)}
 						{@const inLineup = isInLineup(token.currency_id)}
+						{@const isHighlighted = token.currency_id === highlightId}
 						<button
 							type="button"
 							disabled={inLineup}
 							onclick={() => addToken(token)}
 							class="grid w-full cursor-pointer grid-cols-12 items-center px-4 py-3 text-left transition-colors
-								{inLineup ? 'cursor-default bg-[#f8f8f8] opacity-60' : 'bg-white hover:bg-[#f8f6ff]'}"
+								{inLineup ? 'cursor-default bg-[#f8f8f8] opacity-60' : 'bg-white hover:bg-[#f8f6ff]'}
+								{isHighlighted ? 'ring-2 ring-inset ring-[#534AB7]' : ''}"
 						>
 							<div class="col-span-6 flex items-center gap-3">
 								<div

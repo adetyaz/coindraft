@@ -262,6 +262,12 @@
 				class:text-[#534ab7]={page.url.pathname.startsWith('/draft')}>draft</a
 			>
 			<a
+				href="/mentor"
+				class="rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
+				class:bg-[#eeedfe]={page.url.pathname.startsWith('/mentor')}
+				class:text-[#534ab7]={page.url.pathname.startsWith('/mentor')}>mentor</a
+			>
+			<a
 				href="/contest/result"
 				class="rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
 				class:bg-[#eeedfe]={page.url.pathname.startsWith('/contest')}
