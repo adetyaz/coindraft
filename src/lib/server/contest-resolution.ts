@@ -100,7 +100,10 @@ export async function resolveContest(
 		if (winner) {
 			await db
 				.update(users)
-				.set({ xpTotal: (winner.xpTotal ?? 0) + 250 * xpMultiplier })
+				.set({
+					xpTotal: (winner.xpTotal ?? 0) + 250 * xpMultiplier,
+					streak: (winner.streak ?? 0) + 1
+				})
 				.where(eq(users.id, winnerId));
 		}
 	}
@@ -115,7 +118,7 @@ export async function resolveContest(
 		if (loser) {
 			await db
 				.update(users)
-				.set({ xpTotal: (loser.xpTotal ?? 0) + 60 * xpMultiplier })
+				.set({ xpTotal: (loser.xpTotal ?? 0) + 60 * xpMultiplier, streak: 0 })
 				.where(eq(users.id, loserId));
 		}
 	}

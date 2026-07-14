@@ -4,6 +4,7 @@ import { db } from '$lib/server/db';
 import { contests, lineups, lineupPicks } from '$lib/server/schema';
 import { parseSessionToken } from '$lib/server/auth';
 import { resolveContest } from '$lib/server/contest-resolution';
+import { awardWinBadges } from '$lib/server/badges';
 
 export async function GET({ params, cookies }) {
 	const token = cookies.get('session');
@@ -87,6 +88,7 @@ export async function GET({ params, cookies }) {
 	}
 
 	const xpMultiplier = contest.type === 'weekly' ? 2 : 1;
+	const newBadges = didWin ? await awardWinBadges(parsed.userId) : [];
 
 	return json({
 		contestId,
@@ -94,6 +96,7 @@ export async function GET({ params, cookies }) {
 		xp: (didWin ? 250 : 60) * xpMultiplier,
 		yourScore: Number(Number(myLineup.finalScore ?? 0).toFixed(0)),
 		opponentScore,
-		breakdown: scoredPicks
+		breakdown: scoredPicks,
+		newBadges
 	});
 }

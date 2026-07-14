@@ -3,8 +3,10 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import Gauntlet from '$lib/components/Gauntlet.svelte';
+	import type { BadgeDef } from '$lib/badges';
 
 	let contests = $state<Array<Record<string, unknown>>>([]);
+	let badges = $state<(BadgeDef & { earned: boolean; earnedAt: string | null })[]>([]);
 	let sectors = $state<Array<Record<string, unknown>>>([]);
 	let alerts = $state<Array<Record<string, unknown>>>([]);
 	let tokens = $state<
@@ -29,9 +31,25 @@
 	);
 
 	onMount(async () => {
-		await Promise.all([loadContests(), loadSectors(), loadAlerts(), loadTokens(), loadNews()]);
+		await Promise.all([
+			loadContests(),
+			loadSectors(),
+			loadAlerts(),
+			loadTokens(),
+			loadNews(),
+			loadBadges()
+		]);
 		loading = false;
 	});
+
+	async function loadBadges() {
+		try {
+			const res = await fetch('/api/badges');
+			if (res.ok) badges = await res.json();
+		} catch (error) {
+			console.error('Failed to load badges:', error);
+		}
+	}
 
 	async function loadContests() {
 		try {
@@ -232,6 +250,31 @@
 
 	<!-- Gauntlet -->
 	<Gauntlet />
+
+	<!-- Badges -->
+	<section class="rounded-xl border border-black/10 bg-white px-3.5 py-3">
+		<div class="mb-2.5 flex items-center justify-between">
+			<h3 class="text-[11px] font-medium text-[#888780] uppercase">Badges</h3>
+			<small class="text-[11px] text-[#888780]"
+				>{badges.filter((b) => b.earned).length}/{badges.length} unlocked</small
+			>
+		</div>
+		<div class="flex flex-wrap gap-2">
+			{#each badges as badge (badge.code)}
+				<div
+					class="flex items-center gap-2 rounded-lg border px-2.5 py-1.5 {badge.earned
+						? 'border-[#534ab7]/20 bg-[#f5f4ff]'
+						: 'border-black/5 bg-[#fafafa] opacity-50'}"
+					title={badge.description}
+				>
+					<span class="text-base {badge.earned ? '' : 'grayscale'}">{badge.emoji}</span>
+					<span class="text-xs font-medium {badge.earned ? 'text-[#534ab7]' : 'text-[#888780]'}"
+						>{badge.name}</span
+					>
+				</div>
+			{/each}
+		</div>
+	</section>
 
 	<div class="grid grid-cols-2 gap-3 max-[900px]:grid-cols-1">
 		<!-- Hot Tokens -->

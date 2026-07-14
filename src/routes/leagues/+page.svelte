@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import Toast from '$lib/components/Toast.svelte';
 	import { toast } from '$lib/toast';
+	import { BADGE_MAP } from '$lib/badges';
 
 	type League = {
 		id: string;
@@ -53,6 +54,12 @@
 				showCreate = false;
 				newLeagueName = '';
 				await loadLeagues();
+				if (Array.isArray(data.newBadges)) {
+					for (const code of data.newBadges) {
+						const badge = BADGE_MAP.get(code);
+						if (badge) toast(`${badge.emoji} Badge unlocked: ${badge.name}`, 'success');
+					}
+				}
 				goto(`/leagues/${data.id}`);
 			} else {
 				const err = await res.json();

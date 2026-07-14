@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { toast } from '$lib/toast';
+	import Toast from '$lib/components/Toast.svelte';
+	import { BADGE_MAP } from '$lib/badges';
 
 	let result = $state({
 		status: 'YOU WON',
@@ -44,6 +47,13 @@
 			}
 			// Fetch AI breakdown after picks are loaded
 			fetchAiBreakdown(data.breakdown ?? breakdown, data.status ?? result.status);
+
+			if (Array.isArray(data.newBadges)) {
+				for (const code of data.newBadges) {
+					const badge = BADGE_MAP.get(code);
+					if (badge) toast(`${badge.emoji} Badge unlocked: ${badge.name}`, 'success');
+				}
+			}
 		} catch (e: any) {
 			error = e.message ?? 'Could not load result';
 		} finally {
@@ -213,3 +223,5 @@
 		>
 	</section>
 </div>
+
+<Toast />

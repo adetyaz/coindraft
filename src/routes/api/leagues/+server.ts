@@ -3,6 +3,7 @@ import { db } from '$lib/server/db';
 import { leagues, leagueMembers } from '$lib/server/schema';
 import { eq, sql } from 'drizzle-orm';
 import { parseSessionToken } from '$lib/server/auth';
+import { awardLeagueFounderBadge } from '$lib/server/badges';
 
 function generateInviteCode(): string {
 	const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -114,5 +115,7 @@ export async function POST({ request, cookies }) {
 		points: 0
 	});
 
-	return json(league);
+	const newBadges = await awardLeagueFounderBadge(parsed.userId);
+
+	return json({ ...league, newBadges });
 }

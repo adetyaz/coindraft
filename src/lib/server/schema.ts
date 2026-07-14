@@ -129,3 +129,13 @@ export const matchmakingQueue = pgTable('matchmaking_queue', {
 	contestType: text('contest_type').notNull(),
 	queuedAt: timestamp('queued_at').defaultNow().notNull()
 });
+
+// ─── User Badges ──────────────────────────────────────────────────────────────
+// badgeCode references the static catalog in $lib/badges.ts
+
+export const userBadges = pgTable('user_badges', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	userId: uuid('user_id').references(() => users.id),
+	badgeCode: text('badge_code').notNull(),
+	earnedAt: timestamp('earned_at').defaultNow()
+});
