@@ -230,52 +230,52 @@
 			<img src={navLogo} alt="CoinDraft" class="h-7 w-auto" />
 		</a>
 
-		<div class="ml-8 flex flex-1 gap-6">
+		<div class="ml-8 flex min-w-0 flex-1 gap-6 overflow-x-auto max-sm:ml-3 max-sm:gap-4">
 			<a
 				href="/"
-				class="rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
+				class="shrink-0 rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
 				class:bg-[#eeedfe]={page.url.pathname === '/'}
 				class:text-[#534ab7]={page.url.pathname === '/'}>home</a
 			>
 			<a
 				href="/dashboard"
-				class="rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
+				class="shrink-0 rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
 				class:bg-[#eeedfe]={page.url.pathname.startsWith('/dashboard')}
 				class:text-[#534ab7]={page.url.pathname.startsWith('/dashboard')}>dashboard</a
 			>
 			<a
 				href="/leagues"
-				class="rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
+				class="shrink-0 rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
 				class:bg-[#eeedfe]={page.url.pathname.startsWith('/leagues')}
 				class:text-[#534ab7]={page.url.pathname.startsWith('/leagues')}>leagues</a
 			>
 			<a
 				href="/leaderboard"
-				class="rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
+				class="shrink-0 rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
 				class:bg-[#eeedfe]={page.url.pathname.startsWith('/leaderboard')}
 				class:text-[#534ab7]={page.url.pathname.startsWith('/leaderboard')}>leaderboard</a
 			>
 			<a
 				href="/draft"
-				class="rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
+				class="shrink-0 rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
 				class:bg-[#eeedfe]={page.url.pathname.startsWith('/draft')}
 				class:text-[#534ab7]={page.url.pathname.startsWith('/draft')}>draft</a
 			>
 			<a
 				href="/mentor"
-				class="rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
+				class="shrink-0 rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
 				class:bg-[#eeedfe]={page.url.pathname.startsWith('/mentor')}
 				class:text-[#534ab7]={page.url.pathname.startsWith('/mentor')}>mentor</a
 			>
 			<a
 				href="/research"
-				class="rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
+				class="shrink-0 rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
 				class:bg-[#eeedfe]={page.url.pathname.startsWith('/research')}
 				class:text-[#534ab7]={page.url.pathname.startsWith('/research')}>research</a
 			>
 			<a
 				href="/contest/result"
-				class="rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
+				class="shrink-0 rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
 				class:bg-[#eeedfe]={page.url.pathname.startsWith('/contest')}
 				class:text-[#534ab7]={page.url.pathname.startsWith('/contest')}>result</a
 			>
