@@ -5,7 +5,7 @@ import { eq, and } from 'drizzle-orm';
 import { parseSessionToken } from '$lib/server/auth';
 import { ensureTodaySeeded } from '$lib/server/gauntlet';
 
-export async function GET({ cookies }) {
+export async function GET({ cookies, fetch }) {
 	const token = cookies.get('session');
 	const parsed = token ? parseSessionToken(token) : null;
 	if (!parsed) return json({ error: 'Unauthorized' }, { status: 401 });
@@ -13,7 +13,7 @@ export async function GET({ cookies }) {
 	const today = new Date().toISOString().split('T')[0];
 
 	// Cron should normally handle this, but self-heal if it hasn't run yet
-	const question = await ensureTodaySeeded(today);
+	const question = await ensureTodaySeeded(today, fetch);
 
 	const attempt = await db
 		.select()
