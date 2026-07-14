@@ -3,30 +3,7 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { contests, lineups, lineupPicks } from '$lib/server/schema';
 import { parseSessionToken } from '$lib/server/auth';
-import { getSnapshot } from '$lib/server/sosovalue';
-
-function extractPrice(snapshot: unknown): number {
-	if (!snapshot || typeof snapshot !== 'object') return 0;
-	const s = snapshot as Record<string, unknown>;
-	const candidates = [
-		s?.price,
-		s?.current_price,
-		s?.close,
-		s?.last_price,
-		s?.usd_price,
-		s?.priceUsd,
-		s?.price_usd,
-		s?.latestPrice,
-		(s?.market_data as Record<string, unknown> | undefined)?.current_price
-			? ((s.market_data as Record<string, unknown>).current_price as Record<string, unknown>)?.usd
-			: undefined
-	];
-	for (const value of candidates) {
-		const n = Number(value);
-		if (Number.isFinite(n) && n > 0) return n;
-	}
-	return 0;
-}
+import { getSnapshot, extractPrice } from '$lib/server/sosovalue';
 
 export async function POST({ params, request, cookies }) {
 	const token = cookies.get('session');

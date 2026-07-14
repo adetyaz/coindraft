@@ -1,47 +1,17 @@
-import { env } from '$env/dynamic/private';
-import { getSnapshot } from './sosovalue';
+import { getSnapshot, extractPrice } from './sosovalue';
 
-// SoDEX is built by SoSoValue and likely uses the same API key
-const SODEX_BASE_URL = 'https://openapi.sosovalue.com/openapi/v1';
-
-async function fetchSodexPrice(symbol: string): Promise<number | null> {
-	try {
-		const res = await fetch(`${SODEX_BASE_URL}/sodex/price?symbol=${encodeURIComponent(symbol)}`, {
-			headers: { 'x-soso-api-key': env.SOSOVALUE_API_KEY || '' }
-		});
-		if (!res.ok) return null;
-		const data = await res.json();
-		const price = Number(data?.price ?? data?.data?.price ?? null);
-		return Number.isFinite(price) && price > 0 ? price : null;
-	} catch {
-		return null;
-	}
-}
-
-export async function getSodexPrice(symbol: string, currencyId?: string): Promise<number> {
-	const sodexPrice = await fetchSodexPrice(symbol);
-	if (sodexPrice) return sodexPrice;
-
-	if (currencyId) {
-		const snapshot = await getSnapshot(currencyId).catch(() => null);
-		if (snapshot && typeof snapshot === 'object') {
-			const s = snapshot as Record<string, unknown>;
-			const candidates = [
-				s?.price,
-				s?.current_price,
-				s?.close,
-				s?.last_price,
-				s?.usd_price,
-				s?.priceUsd,
-				s?.price_usd,
-				s?.latestPrice
-			];
-			for (const value of candidates) {
-				const n = Number(value);
-				if (Number.isFinite(n) && n > 0) return n;
-			}
-		}
-	}
-
-	return 0;
+// SoDEX's "Market Data API" is documented (sodex.com/documentation/market-data-api)
+// as pointing at SoSoValue's own API — same base URL, same key. Confirmed live:
+// the two previously-guessed SoDEX-specific endpoints (api.sodex.io, and a
+// /sodex/price path under openapi.sosovalue.com) don't exist — one is an
+// unregistered domain, the other 404s. This just calls the real shared endpoint.
+//
+// SoDEX also has a separate on-chain Trading API (mainnet-gw.sodex.dev) with its
+// own /ticker and /markPrice endpoints for tokens actually listed on its DEX —
+// that's a genuinely different data source, but it needs its own SoDEX account
+// and EIP712-signed API keys (not a header key like SoSoValue's), which this
+// project doesn't have set up. Wiring that up is separate future work.
+export async function getSodexPrice(currencyId: string): Promise<number> {
+	const snapshot = await getSnapshot(currencyId).catch(() => null);
+	return extractPrice(snapshot);
 }

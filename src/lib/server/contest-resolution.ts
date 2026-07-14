@@ -1,31 +1,8 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { contests, lineups, lineupPicks, users, leagueMembers } from '$lib/server/schema';
-import { getSnapshot } from '$lib/server/sosovalue';
+import { getSnapshot, extractPrice } from '$lib/server/sosovalue';
 import { calcPickScore } from '$lib/server/scoring';
-
-function extractPrice(snapshot: unknown): number {
-	if (!snapshot || typeof snapshot !== 'object') return 0;
-	const s = snapshot as Record<string, unknown>;
-	const candidates = [
-		s?.price,
-		s?.current_price,
-		s?.close,
-		s?.last_price,
-		s?.usd_price,
-		s?.priceUsd,
-		s?.price_usd,
-		s?.latestPrice,
-		(s?.market_data as Record<string, unknown> | undefined)?.current_price
-			? ((s.market_data as Record<string, unknown>).current_price as Record<string, unknown>)?.usd
-			: undefined
-	];
-	for (const value of candidates) {
-		const n = Number(value);
-		if (Number.isFinite(n) && n > 0) return n;
-	}
-	return 0;
-}
 
 async function scoreLineupPicks(lineupId: string) {
 	const picks = await db.select().from(lineupPicks).where(eq(lineupPicks.lineupId, lineupId));

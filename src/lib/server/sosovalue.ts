@@ -57,6 +57,31 @@ export async function ssv<T>(
 	throw new Error(`SSV rate limit: giving up after 3 attempts on ${path}`);
 }
 
+// Pulls a usable USD price out of a market-snapshot response, whichever
+// field name the API happens to return it under.
+export function extractPrice(snapshot: unknown): number {
+	if (!snapshot || typeof snapshot !== 'object') return 0;
+	const s = snapshot as Record<string, unknown>;
+	const candidates = [
+		s?.price,
+		s?.current_price,
+		s?.close,
+		s?.last_price,
+		s?.usd_price,
+		s?.priceUsd,
+		s?.price_usd,
+		s?.latestPrice,
+		(s?.market_data as Record<string, unknown> | undefined)?.current_price
+			? ((s.market_data as Record<string, unknown>).current_price as Record<string, unknown>)?.usd
+			: undefined
+	];
+	for (const value of candidates) {
+		const n = Number(value);
+		if (Number.isFinite(n) && n > 0) return n;
+	}
+	return 0;
+}
+
 // Named helpers — import these everywhere
 export const getTokens = () => ssv('/currencies', 86400); // 24h
 export const getSectors = () => ssv('/currencies/sector-spotlight', 300); // 5min
