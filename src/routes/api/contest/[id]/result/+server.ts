@@ -86,10 +86,12 @@ export async function GET({ params, cookies }) {
 		opponentScore = Number(Math.max(0, total - 120 + 110).toFixed(0));
 	}
 
+	const xpMultiplier = contest.type === 'weekly' ? 2 : 1;
+
 	return json({
 		contestId,
 		status: didWin ? 'YOU WON' : 'YOU LOST',
-		xp: didWin ? 250 : 60,
+		xp: (didWin ? 250 : 60) * xpMultiplier,
 		yourScore: Number(Number(myLineup.finalScore ?? 0).toFixed(0)),
 		opponentScore,
 		breakdown: scoredPicks

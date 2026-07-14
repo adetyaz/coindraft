@@ -27,26 +27,29 @@ export async function POST({ request, cookies }) {
 	}
 
 	const body = await request.json();
-	const { type } = body;
+	const type = body.type === 'weekly' ? 'weekly' : 'daily';
 
-	// Option A: reuse any open or live contest the user already has
+	// Option A: reuse any open or live contest the user already has of the same type
 	const existing = await db
 		.select()
 		.from(contests)
 		.where(or(eq(contests.userAId, parsed.userId), eq(contests.userBId, parsed.userId)))
-		.then((rows) => rows.find((c) => c.status === 'open' || c.status === 'live') ?? null);
+		.then(
+			(rows) =>
+				rows.find((c) => (c.status === 'open' || c.status === 'live') && c.type === type) ?? null
+		);
 
 	if (existing) {
 		return json(existing);
 	}
 
-	// No active contest — create one
+	// No active contest of this type — create one
 	const [newContest] = await db
 		.insert(contests)
 		.values({
 			userAId: parsed.userId,
 			userBId: null,
-			type: type || 'daily',
+			type,
 			status: 'open'
 		})
 		.returning();

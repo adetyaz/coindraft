@@ -37,6 +37,7 @@
 	let timer: ReturnType<typeof setInterval> | null = null;
 	let activeBoosts = $state<Map<string, boolean>>(new Map());
 	let highlightId = $state('');
+	let contestType = $state<'daily' | 'weekly'>('daily');
 
 	// ── Sector visual config ───────────────────────────────────────────
 	const SECTOR_STYLE: Record<string, { color: string; bg: string; dimBg: string }> = {
@@ -52,6 +53,7 @@
 		const p = new URLSearchParams(window.location.search);
 		contestId = p.get('contestId') ?? '';
 		highlightId = p.get('highlight') ?? '';
+		contestType = p.get('type') === 'weekly' ? 'weekly' : 'daily';
 		loadData();
 		timer = setInterval(() => {
 			timeLeft = Math.max(0, timeLeft - 1);
@@ -230,7 +232,17 @@
 			class="flex items-center justify-between rounded-xl border border-black/5 bg-white px-5 py-4 shadow-sm"
 		>
 			<div>
-				<h1 class="text-lg leading-tight font-semibold text-[#1c1b22]">Draft — Daily Contest</h1>
+				<div class="flex items-center gap-2">
+					<h1 class="text-lg leading-tight font-semibold text-[#1c1b22]">
+						Draft — {contestType === 'weekly' ? 'Weekly Contest' : 'Daily Contest'}
+					</h1>
+					{#if contestType === 'weekly'}
+						<span
+							class="rounded-full bg-[#fef3c7] px-2 py-0.5 text-[10px] font-bold text-[#d97706] uppercase"
+							>7-day · 2x XP</span
+						>
+					{/if}
+				</div>
 				<p class="mt-0.5 text-[11px] font-medium tracking-wider text-[#888780] uppercase">
 					Strategic Selection Phase
 				</p>

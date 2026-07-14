@@ -79,8 +79,9 @@ export async function POST({ params, request, cookies }) {
 	// Only set contest live when userA (the creator) submits
 	// userB submits into an already-live contest
 	if (existingContest.userAId === parsed.userId) {
+		const windowDays = existingContest.type === 'weekly' ? 7 : 1;
 		const startAt = new Date();
-		const endAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+		const endAt = new Date(Date.now() + windowDays * 24 * 60 * 60 * 1000);
 		await db
 			.update(contests)
 			.set({ status: 'live', startAt, endAt })

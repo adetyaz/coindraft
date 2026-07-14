@@ -83,6 +83,7 @@ export async function resolveContest(
 
 	const winnerId = didAWin ? contest.userAId : contest.userBId || null;
 	const loserId = didAWin ? contest.userBId : contest.userAId;
+	const xpMultiplier = contest.type === 'weekly' ? 2 : 1;
 
 	await db
 		.update(contests)
@@ -99,7 +100,7 @@ export async function resolveContest(
 		if (winner) {
 			await db
 				.update(users)
-				.set({ xpTotal: (winner.xpTotal ?? 0) + 250 })
+				.set({ xpTotal: (winner.xpTotal ?? 0) + 250 * xpMultiplier })
 				.where(eq(users.id, winnerId));
 		}
 	}
@@ -114,7 +115,7 @@ export async function resolveContest(
 		if (loser) {
 			await db
 				.update(users)
-				.set({ xpTotal: (loser.xpTotal ?? 0) + 60 })
+				.set({ xpTotal: (loser.xpTotal ?? 0) + 60 * xpMultiplier })
 				.where(eq(users.id, loserId));
 		}
 	}

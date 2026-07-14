@@ -87,13 +87,13 @@
 		}
 	}
 
-	async function createContest() {
+	async function createContest(type: 'daily' | 'weekly' = 'daily') {
 		actionError = '';
 		try {
 			const res = await fetch('/api/contests', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ type: 'daily' })
+				body: JSON.stringify({ type })
 			});
 			if (!res.ok) {
 				const payload = await res.json().catch(() => ({}));
@@ -104,7 +104,7 @@
 				throw new Error(payload?.error ?? 'Failed to create contest');
 			}
 			const contest = await res.json();
-			window.location.href = `/draft?contestId=${contest.id}`;
+			window.location.href = `/draft?contestId=${contest.id}&type=${contest.type}`;
 		} catch (error) {
 			actionError = (error as Error)?.message ?? 'Failed to create contest';
 			console.error('Failed to create contest:', error);
@@ -322,10 +322,16 @@
 	<section class="rounded-xl border border-black/10 bg-white px-3.5 py-3">
 		<div class="mb-3 flex items-center justify-between">
 			<h3 class="text-[11px] font-medium text-[#888780] uppercase">My Contests</h3>
-			<button
-				class="h-7 cursor-pointer rounded-lg border-0 bg-[#eeedfe] px-3 text-[12px] font-medium text-[#534ab7]"
-				onclick={createContest}>+ New Draft</button
-			>
+			<div class="flex gap-1.5">
+				<button
+					class="h-7 cursor-pointer rounded-lg border-0 bg-[#eeedfe] px-3 text-[12px] font-medium text-[#534ab7]"
+					onclick={() => createContest('daily')}>+ Daily</button
+				>
+				<button
+					class="h-7 cursor-pointer rounded-lg border-0 bg-[#fef3c7] px-3 text-[12px] font-medium text-[#d97706]"
+					onclick={() => createContest('weekly')}>+ Weekly</button
+				>
+			</div>
 		</div>
 		{#if actionError}
 			<p class="mb-2 text-[11px] text-[#993c1d]">{actionError}</p>
@@ -368,7 +374,7 @@
 							>
 						{:else}
 							<a
-								href={`/draft?contestId=${c.id}`}
+								href={`/draft?contestId=${c.id}&type=${c.type ?? 'daily'}`}
 								class="h-7 rounded-lg bg-[#534ab7] px-3 text-[12px] leading-7 font-medium text-[#eeedfe] no-underline"
 								>Continue Draft</a
 							>

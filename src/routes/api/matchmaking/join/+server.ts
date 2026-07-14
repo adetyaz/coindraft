@@ -12,15 +12,16 @@ export async function POST({ request, cookies }) {
 	if (!parsed) return json({ error: 'Unauthorized' }, { status: 401 });
 
 	const body = await request.json().catch(() => ({}));
-	const contestType = body.type || 'daily';
+	const contestType = body.type === 'weekly' ? 'weekly' : 'daily';
 
-	// Check if user already in a live contest
+	// Check if user already in a live contest of this type
 	const existing = await db
 		.select()
 		.from(contests)
 		.where(
 			and(
 				eq(contests.status, 'live'),
+				eq(contests.type, contestType),
 				or(eq(contests.userAId, parsed.userId), eq(contests.userBId, parsed.userId))
 			)
 		)
