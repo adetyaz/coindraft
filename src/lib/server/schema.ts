@@ -139,3 +139,16 @@ export const userBadges = pgTable('user_badges', {
 	badgeCode: text('badge_code').notNull(),
 	earnedAt: timestamp('earned_at').defaultNow()
 });
+
+// ─── Research Reads ───────────────────────────────────────────────────────────
+// One boost-earning read per user per day (articleId is SoSoValue's news id)
+
+export const researchReads = pgTable('research_reads', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	userId: uuid('user_id').references(() => users.id),
+	articleId: text('article_id').notNull(),
+	sector: text('sector').notNull(),
+	xpEarned: integer('xp_earned').default(0),
+	readDate: date('read_date').notNull(),
+	readAt: timestamp('read_at').defaultNow()
+});
