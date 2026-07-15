@@ -22,12 +22,18 @@
 	let boostClaimedToday = $state(false);
 	let claiming = $state(false);
 
+	function sectorStyle(varName: string) {
+		return {
+			color: `var(--color-sector-${varName})`,
+			bg: `color-mix(in oklab, var(--color-sector-${varName}) 18%, transparent)`
+		};
+	}
 	const SECTOR_STYLE: Record<string, { color: string; bg: string }> = {
-		l1: { color: '#0F6E56', bg: '#E1F5EE' },
-		l2: { color: '#2563EB', bg: '#dbeafe' },
-		defi: { color: '#534AB7', bg: '#eeedfe' },
-		meme: { color: '#993C1D', bg: '#FAECE7' },
-		wildcard: { color: '#D97706', bg: '#fef3c7' }
+		l1: sectorStyle('l1'),
+		l2: sectorStyle('l2'),
+		defi: sectorStyle('defi'),
+		meme: sectorStyle('meme'),
+		wildcard: sectorStyle('wildcard')
 	};
 
 	onMount(async () => {
@@ -90,8 +96,8 @@
 
 <div class="flex flex-col gap-3">
 	<div>
-		<h1 class="text-lg font-semibold text-[#1c1b22]">Research Hub</h1>
-		<p class="mt-0.5 text-xs text-[#888780]">
+		<h1 class="text-lg font-semibold text-text">Research Hub</h1>
+		<p class="mt-0.5 text-xs text-text-muted">
 			Read one article a day for a free sector boost on your next draft.
 		</p>
 	</div>
@@ -100,31 +106,31 @@
 		<button
 			class="cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition {activeFilter ===
 			'all'
-				? 'border-[#534ab7] bg-[#eeedfe] text-[#534ab7]'
-				: 'border-black/10 bg-white text-[#5d5d6b] hover:bg-[#f5f5f5]'}"
+				? 'border-primary bg-primary-muted text-primary'
+				: 'border-border bg-surface text-text-secondary hover:bg-hover'}"
 			onclick={() => (activeFilter = 'all')}>All</button
 		>
 		{#each SECTORS as s (s.id)}
 			<button
 				class="cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition {activeFilter ===
 				s.id
-					? 'border-[#534ab7] bg-[#eeedfe] text-[#534ab7]'
-					: 'border-black/10 bg-white text-[#5d5d6b] hover:bg-[#f5f5f5]'}"
+					? 'border-primary bg-primary-muted text-primary'
+					: 'border-border bg-surface text-text-secondary hover:bg-hover'}"
 				onclick={() => (activeFilter = s.id)}>{s.name}</button
 			>
 		{/each}
 	</div>
 
 	{#if loading}
-		<p class="py-8 text-center text-sm text-[#888780]">Loading research feed...</p>
+		<p class="py-8 text-center text-sm text-text-muted">Loading research feed...</p>
 	{:else if filtered.length === 0}
-		<p class="py-8 text-center text-sm text-[#888780]">No articles available right now.</p>
+		<p class="py-8 text-center text-sm text-text-muted">No articles available right now.</p>
 	{:else}
 		<div class="flex flex-col gap-2">
 			{#each filtered as article (article.id)}
 				{@const style = SECTOR_STYLE[article.sector] ?? SECTOR_STYLE.wildcard}
 				{@const isOpen = expandedId === article.id}
-				<div class="rounded-xl border border-black/10 bg-white px-4 py-3">
+				<div class="rounded-xl border border-border bg-surface px-4 py-3">
 					<button
 						type="button"
 						class="flex w-full cursor-pointer items-start justify-between gap-3 text-left"
@@ -137,14 +143,14 @@
 									style="background: {style.bg}; color: {style.color}"
 									>{sectorName(article.sector)}</span
 								>
-								<span class="text-[11px] text-[#888780]"
+								<span class="text-[11px] text-text-muted"
 									>{article.source}{article.date ? ` · ${fmtDate(article.date)}` : ''}</span
 								>
 							</div>
-							<p class="text-sm font-medium text-[#1c1b22]">{article.title}</p>
+							<p class="text-sm font-medium text-text">{article.title}</p>
 						</div>
 						<svg
-							class="mt-1 h-4 w-4 shrink-0 text-[#888780] transition-transform {isOpen
+							class="mt-1 h-4 w-4 shrink-0 text-text-muted transition-transform {isOpen
 								? 'rotate-180'
 								: ''}"
 							fill="none"
@@ -156,8 +162,8 @@
 						</svg>
 					</button>
 					{#if isOpen}
-						<div class="mt-3 border-t border-black/5 pt-3">
-							<p class="text-[13px] leading-relaxed whitespace-pre-line text-[#5d5d6b]">
+						<div class="mt-3 border-t border-border pt-3">
+							<p class="text-[13px] leading-relaxed whitespace-pre-line text-text-secondary">
 								{article.content}
 							</p>
 							{#if article.url}
@@ -165,7 +171,7 @@
 									href={article.url}
 									target="_blank"
 									rel="noopener noreferrer"
-									class="mt-2 inline-block text-[11px] font-medium text-[#534ab7] hover:underline"
+									class="mt-2 inline-block text-[11px] font-medium text-primary hover:underline"
 									>Read full source →</a
 								>
 							{/if}
