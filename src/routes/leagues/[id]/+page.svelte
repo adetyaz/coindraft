@@ -55,17 +55,17 @@
 	}
 </script>
 
-<div class="min-h-screen bg-[#F8F8F7]">
+<div class="min-h-screen bg-bg">
 	<div class="mx-auto max-w-4xl px-4 py-6">
 		{#if loading}
-			<div class="h-32 animate-pulse rounded-xl bg-white shadow-sm"></div>
+			<div class="h-32 animate-pulse rounded-xl bg-surface shadow-sm"></div>
 		{:else if league}
 			<!-- Header -->
-			<div class="mb-6 rounded-xl border border-black/5 bg-white p-5 shadow-sm">
+			<div class="mb-6 rounded-xl border border-border bg-surface p-5 shadow-sm">
 				<div class="flex items-start justify-between">
 					<div>
-						<h1 class="text-xl font-semibold text-[#1c1b22]">{league.name}</h1>
-						<p class="text-sm text-[#888780]">
+						<h1 class="text-xl font-semibold text-text">{league.name}</h1>
+						<p class="text-sm text-text-muted">
 							{league.type} · {members.length} members · Season ends {new Date(
 								league.seasonEnd
 							).toLocaleDateString()}
@@ -74,7 +74,7 @@
 					{#if league.inviteCode}
 						<button
 							onclick={copyInviteCode}
-							class="rounded-lg bg-[#EEEDFE] px-3 py-1.5 text-xs font-bold tracking-wider text-[#534AB7] uppercase transition-colors hover:bg-[#dddaf8]"
+							class="rounded-lg bg-primary-muted px-3 py-1.5 text-xs font-bold tracking-wider text-primary uppercase transition-colors hover:bg-primary/30"
 						>
 							Copy Code: {league.inviteCode}
 						</button>
@@ -83,16 +83,16 @@
 			</div>
 
 			<!-- Standings -->
-			<div class="overflow-hidden rounded-xl border border-black/5 bg-white shadow-sm">
-				<div class="border-b border-black/5 px-5 py-3">
-					<h2 class="text-sm font-semibold text-[#1c1b22]">Standings</h2>
+			<div class="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+				<div class="border-b border-border px-5 py-3">
+					<h2 class="text-sm font-semibold text-text">Standings</h2>
 				</div>
 				{#if members.length === 0}
-					<p class="px-5 py-8 text-center text-sm text-[#888780]">No members yet</p>
+					<p class="px-5 py-8 text-center text-sm text-text-muted">No members yet</p>
 				{:else}
-					<div class="divide-y divide-black/5">
+					<div class="divide-y divide-border">
 						<div
-							class="grid grid-cols-12 gap-2 px-5 py-2 text-[10px] font-bold tracking-wider text-[#888780] uppercase"
+							class="grid grid-cols-12 gap-2 px-5 py-2 text-[10px] font-bold tracking-wider text-text-muted uppercase"
 						>
 							<div class="col-span-1">#</div>
 							<div class="col-span-5">Player</div>
@@ -103,14 +103,14 @@
 						{#each members as member, i (member.id)}
 							<div
 								class="grid grid-cols-12 items-center gap-2 px-5 py-3 {i === 0
-									? 'bg-[#EEEDFE]/50'
+									? 'bg-primary-muted'
 									: ''}"
 							>
-								<div class="col-span-1 text-sm font-bold text-[#534AB7]">{i + 1}</div>
-								<div class="col-span-5 text-sm font-medium text-[#1c1b22]">{member.username}</div>
-								<div class="col-span-2 text-right text-sm text-[#0F6E56]">{member.wins}</div>
-								<div class="col-span-2 text-right text-sm text-[#993C1D]">{member.losses}</div>
-								<div class="col-span-2 text-right text-sm font-bold text-[#1c1b22]">
+								<div class="col-span-1 text-sm font-bold text-primary">{i + 1}</div>
+								<div class="col-span-5 text-sm font-medium text-text">{member.username}</div>
+								<div class="col-span-2 text-right text-sm text-positive">{member.wins}</div>
+								<div class="col-span-2 text-right text-sm text-negative">{member.losses}</div>
+								<div class="col-span-2 text-right text-sm font-bold text-text">
 									{member.points}
 								</div>
 							</div>
