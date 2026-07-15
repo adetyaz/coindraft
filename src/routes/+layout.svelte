@@ -15,6 +15,22 @@
 	let lastAttemptedWallet = '';
 	let walletConnected = $state(false);
 	let signError = $state(false);
+	let isLight = $state(false);
+
+	onMount(() => {
+		isLight = document.documentElement.getAttribute('data-theme') === 'light';
+	});
+
+	function toggleTheme() {
+		isLight = !isLight;
+		if (isLight) {
+			document.documentElement.setAttribute('data-theme', 'light');
+			localStorage.setItem('theme', 'light');
+		} else {
+			document.documentElement.removeAttribute('data-theme');
+			localStorage.setItem('theme', 'dark');
+		}
+	}
 
 	type MaybeEthereum = {
 		request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
@@ -224,7 +240,7 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-<nav class="sticky top-0 z-50 flex h-11 items-center border-b border-black/10 bg-white px-3.5">
+<nav class="sticky top-0 z-50 flex h-11 items-center border-b border-border bg-surface px-3.5">
 	<div class="mx-auto flex w-full max-w-6xl items-center justify-between">
 		<a href="/" class="flex items-center no-underline">
 			<img src={navLogo} alt="CoinDraft" class="h-7 w-auto" />
@@ -233,100 +249,120 @@
 		<div class="ml-8 flex min-w-0 flex-1 gap-6 overflow-x-auto max-sm:ml-3 max-sm:gap-4">
 			<a
 				href="/"
-				class="shrink-0 rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
-				class:bg-[#eeedfe]={page.url.pathname === '/'}
-				class:text-[#534ab7]={page.url.pathname === '/'}>home</a
+				class="shrink-0 rounded px-2 py-1 text-sm text-text-secondary transition hover:bg-hover hover:text-text"
+				class:bg-primary-muted={page.url.pathname === '/'}
+				class:text-primary={page.url.pathname === '/'}>home</a
 			>
 			<a
 				href="/dashboard"
-				class="shrink-0 rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
-				class:bg-[#eeedfe]={page.url.pathname.startsWith('/dashboard')}
-				class:text-[#534ab7]={page.url.pathname.startsWith('/dashboard')}>dashboard</a
+				class="shrink-0 rounded px-2 py-1 text-sm text-text-secondary transition hover:bg-hover hover:text-text"
+				class:bg-primary-muted={page.url.pathname.startsWith('/dashboard')}
+				class:text-primary={page.url.pathname.startsWith('/dashboard')}>dashboard</a
 			>
 			<a
 				href="/leagues"
-				class="shrink-0 rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
-				class:bg-[#eeedfe]={page.url.pathname.startsWith('/leagues')}
-				class:text-[#534ab7]={page.url.pathname.startsWith('/leagues')}>leagues</a
+				class="shrink-0 rounded px-2 py-1 text-sm text-text-secondary transition hover:bg-hover hover:text-text"
+				class:bg-primary-muted={page.url.pathname.startsWith('/leagues')}
+				class:text-primary={page.url.pathname.startsWith('/leagues')}>leagues</a
 			>
 			<a
 				href="/leaderboard"
-				class="shrink-0 rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
-				class:bg-[#eeedfe]={page.url.pathname.startsWith('/leaderboard')}
-				class:text-[#534ab7]={page.url.pathname.startsWith('/leaderboard')}>leaderboard</a
+				class="shrink-0 rounded px-2 py-1 text-sm text-text-secondary transition hover:bg-hover hover:text-text"
+				class:bg-primary-muted={page.url.pathname.startsWith('/leaderboard')}
+				class:text-primary={page.url.pathname.startsWith('/leaderboard')}>leaderboard</a
 			>
 			<a
 				href="/draft"
-				class="shrink-0 rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
-				class:bg-[#eeedfe]={page.url.pathname.startsWith('/draft')}
-				class:text-[#534ab7]={page.url.pathname.startsWith('/draft')}>draft</a
+				class="shrink-0 rounded px-2 py-1 text-sm text-text-secondary transition hover:bg-hover hover:text-text"
+				class:bg-primary-muted={page.url.pathname.startsWith('/draft')}
+				class:text-primary={page.url.pathname.startsWith('/draft')}>draft</a
 			>
 			<a
 				href="/mentor"
-				class="shrink-0 rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
-				class:bg-[#eeedfe]={page.url.pathname.startsWith('/mentor')}
-				class:text-[#534ab7]={page.url.pathname.startsWith('/mentor')}>mentor</a
+				class="shrink-0 rounded px-2 py-1 text-sm text-text-secondary transition hover:bg-hover hover:text-text"
+				class:bg-primary-muted={page.url.pathname.startsWith('/mentor')}
+				class:text-primary={page.url.pathname.startsWith('/mentor')}>mentor</a
 			>
 			<a
 				href="/research"
-				class="shrink-0 rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
-				class:bg-[#eeedfe]={page.url.pathname.startsWith('/research')}
-				class:text-[#534ab7]={page.url.pathname.startsWith('/research')}>research</a
+				class="shrink-0 rounded px-2 py-1 text-sm text-text-secondary transition hover:bg-hover hover:text-text"
+				class:bg-primary-muted={page.url.pathname.startsWith('/research')}
+				class:text-primary={page.url.pathname.startsWith('/research')}>research</a
 			>
 			<a
 				href="/contest/result"
-				class="shrink-0 rounded px-2 py-1 text-sm text-[#666] transition hover:bg-[#f0f0f0] hover:text-[#333]"
-				class:bg-[#eeedfe]={page.url.pathname.startsWith('/contest')}
-				class:text-[#534ab7]={page.url.pathname.startsWith('/contest')}>result</a
+				class="shrink-0 rounded px-2 py-1 text-sm text-text-secondary transition hover:bg-hover hover:text-text"
+				class:bg-primary-muted={page.url.pathname.startsWith('/contest')}
+				class:text-primary={page.url.pathname.startsWith('/contest')}>result</a
 			>
 		</div>
 
-		{#if data.user}
-			<div class="flex items-center gap-3">
-				<div class="rounded-[99px] bg-[#eeedfe] px-3 py-1 text-xs font-medium text-[#534ab7]">
+		<div class="flex items-center gap-3">
+			<button
+				onclick={toggleTheme}
+				aria-label="Toggle theme"
+				class="grid h-8 w-8 cursor-pointer place-items-center rounded-full border border-border bg-transparent text-text-secondary transition hover:bg-hover"
+			>
+				{#if isLight}
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+						/>
+					</svg>
+				{:else}
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<circle cx="12" cy="12" r="4" />
+						<path
+							stroke-linecap="round"
+							d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"
+						/>
+					</svg>
+				{/if}
+			</button>
+
+			{#if data.user}
+				<div class="rounded-[99px] bg-primary-muted px-3 py-1 text-xs font-medium text-primary">
 					{data.user.xpTotal ?? 0} XP
 				</div>
 				<div
-					class="grid h-8 w-8 place-items-center rounded-full bg-[#534ab7] text-sm font-medium text-white"
+					class="grid h-8 w-8 place-items-center rounded-full bg-primary text-sm font-medium text-white"
 				>
 					{data.user.username?.[0]?.toUpperCase() ?? '?'}
 				</div>
 				<button
 					onclick={logout}
-					class="cursor-pointer rounded border border-[#ddd] bg-transparent px-3 py-1 text-xs text-[#666] transition hover:bg-[#f5f5f5] hover:text-[#333]"
+					class="cursor-pointer rounded border border-border bg-transparent px-3 py-1 text-xs text-text-secondary transition hover:bg-hover hover:text-text"
 					>logout</button
 				>
-			</div>
-		{:else}
-			<div class="flex items-center gap-3">
-				{#if walletConnected}
-					{#if authInFlight}
-						<span class="text-xs text-[#666]">Signing...</span>
-					{:else if signError}
-						<span class="text-xs text-red-500">Signature failed.</span>
-						<button
-							onclick={retrySign}
-							class="cursor-pointer rounded bg-[#534ab7] px-3 py-1 text-xs font-medium text-white transition hover:bg-[#4239a0]"
-							>Try again</button
-						>
-					{:else}
-						<span class="text-xs text-[#666]">Wallet connected —</span>
-						<button
-							onclick={retrySign}
-							class="cursor-pointer rounded bg-[#534ab7] px-3 py-1 text-xs font-medium text-white transition hover:bg-[#4239a0]"
-							>Sign to verify</button
-						>
-					{/if}
-				{:else if appkitReady}
-					<appkit-button></appkit-button>
-				{:else}
+			{:else if walletConnected}
+				{#if authInFlight}
+					<span class="text-xs text-text-secondary">Signing...</span>
+				{:else if signError}
+					<span class="text-xs text-negative">Signature failed.</span>
 					<button
-						class="cursor-not-allowed rounded border border-[#ddd] bg-transparent px-3 py-1 text-xs text-[#666]"
-						disabled>loading wallet...</button
+						onclick={retrySign}
+						class="cursor-pointer rounded bg-primary px-3 py-1 text-xs font-medium text-white transition hover:bg-primary-hover"
+						>Try again</button
+					>
+				{:else}
+					<span class="text-xs text-text-secondary">Wallet connected —</span>
+					<button
+						onclick={retrySign}
+						class="cursor-pointer rounded bg-primary px-3 py-1 text-xs font-medium text-white transition hover:bg-primary-hover"
+						>Sign to verify</button
 					>
 				{/if}
-			</div>
-		{/if}
+			{:else if appkitReady}
+				<appkit-button></appkit-button>
+			{:else}
+				<button
+					class="cursor-not-allowed rounded border border-border bg-transparent px-3 py-1 text-xs text-text-secondary"
+					disabled>loading wallet...</button
+				>
+			{/if}
+		</div>
 	</div>
 </nav>
 

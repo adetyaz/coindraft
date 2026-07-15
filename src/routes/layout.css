@@ -1,1 +1,81 @@
 @import 'tailwindcss';
+
+/* ─── Surface tokens — dark is the default theme, light is opt-in ────────── */
+
+:root {
+	--surface-bg: #0d0c18;
+	--surface-card: #16151f;
+	--surface-raised: #1e1d29;
+	--surface-border: rgba(255, 255, 255, 0.08);
+	--surface-hover: rgba(255, 255, 255, 0.06);
+
+	--text-primary: #f5f5f7;
+	--text-secondary: #a8a6b3;
+	--text-muted: #6b6875;
+}
+
+:root[data-theme='light'] {
+	--surface-bg: #f8f8f7;
+	--surface-card: #ffffff;
+	--surface-raised: #ffffff;
+	--surface-border: rgba(0, 0, 0, 0.08);
+	--surface-hover: rgba(0, 0, 0, 0.04);
+
+	--text-primary: #1c1b22;
+	--text-secondary: #5d5d6b;
+	--text-muted: #888780;
+}
+
+/* ─── Design tokens ────────────────────────────────────────────────────────
+   Color roles, sector palette, and scales — defined once, used everywhere.
+   Sector hues are deliberately spread across the wheel (green/blue/violet/
+   pink/cyan) so none of them are ever confused with the orange brand color. */
+
+@theme {
+	/* Brand */
+	--color-primary: #ff6b35;
+	--color-primary-hover: #e5522a;
+	--color-primary-muted: #ff6b3520;
+
+	/* Semantic */
+	--color-positive: #22c55e;
+	--color-negative: #ef4444;
+	--color-warning: #f59e0b;
+
+	/* Sector palette */
+	--color-sector-l1: #10b981;
+	--color-sector-l2: #3b82f6;
+	--color-sector-defi: #8b5cf6;
+	--color-sector-meme: #ec4899;
+	--color-sector-wildcard: #06b6d4;
+
+	/* Surfaces (theme-reactive via CSS vars above) */
+	--color-bg: var(--surface-bg);
+	--color-surface: var(--surface-card);
+	--color-surface-raised: var(--surface-raised);
+	--color-border: var(--surface-border);
+	--color-hover: var(--surface-hover);
+
+	/* Text (theme-reactive) */
+	--color-text: var(--text-primary);
+	--color-text-secondary: var(--text-secondary);
+	--color-text-muted: var(--text-muted);
+
+	/* Type scale — semantic sizes layered on top of Tailwind's default scale */
+	--font-size-display: 2.5rem; /* 40px — hero numbers, big win/loss states */
+	--font-size-display--line-height: 1.1;
+	--font-size-title: 1.5rem; /* 24px — page/section titles */
+	--font-size-title--line-height: 1.2;
+	--font-size-body: 0.875rem; /* 14px — default body text */
+	--font-size-caption: 0.75rem; /* 12px — labels, metadata */
+	--font-size-micro: 0.6875rem; /* 11px — uppercase eyebrow labels */
+
+	/* Spacing scale — semantic gaps used across card/section layouts */
+	--spacing-card: 1rem; /* 16px */
+	--spacing-section: 0.75rem; /* 12px */
+}
+
+body {
+	background: var(--color-bg);
+	color: var(--color-text);
+}
