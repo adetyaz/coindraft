@@ -114,7 +114,7 @@
 
 <div class="mx-auto flex h-[calc(100vh-44px)] max-w-3xl flex-col px-3.5 py-4">
 	<div class="mb-3 flex items-center gap-2">
-		<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#534ab7]">
+		<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
 			<svg
 				class="h-4 w-4 text-white"
 				fill="none"
@@ -128,22 +128,22 @@
 			</svg>
 		</div>
 		<div>
-			<h1 class="text-sm font-bold text-[#1c1b22]">AI Mentor</h1>
-			<p class="text-[11px] text-[#888780]">Grounded in live sector, token, and news data</p>
+			<h1 class="text-sm font-bold text-text">AI Mentor</h1>
+			<p class="text-[11px] text-text-muted">Grounded in live sector, token, and news data</p>
 		</div>
 	</div>
 
 	<div
 		bind:this={scrollEl}
-		class="flex-1 space-y-3 overflow-y-auto rounded-xl border border-black/10 bg-white p-4"
+		class="flex-1 space-y-3 overflow-y-auto rounded-xl border border-border bg-surface p-4"
 	>
 		{#if messages.length === 0}
 			<div class="flex h-full flex-col items-center justify-center gap-4 text-center">
-				<p class="text-sm text-[#888780]">Ask about a token, a sector, or how to build your lineup.</p>
+				<p class="text-sm text-text-muted">Ask about a token, a sector, or how to build your lineup.</p>
 				<div class="flex flex-wrap justify-center gap-2">
 					{#each SUGGESTIONS as s (s)}
 						<button
-							class="cursor-pointer rounded-full border border-[#534ab7]/20 bg-[#eeedfe] px-3 py-1.5 text-xs font-medium text-[#534ab7] transition hover:bg-[#e0defc]"
+							class="cursor-pointer rounded-full border border-primary/20 bg-primary-muted px-3 py-1.5 text-xs font-medium text-primary transition hover:bg-primary/20"
 							onclick={() => send(s)}
 						>
 							{s}
@@ -156,17 +156,17 @@
 				<div class="flex {msg.role === 'user' ? 'justify-end' : 'justify-start'}">
 					<div
 						class="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap
-						{msg.role === 'user' ? 'bg-[#534ab7] text-white' : 'bg-[#f5f4ff] text-[#1c1b22]'}"
+						{msg.role === 'user' ? 'bg-primary text-white' : 'bg-surface-raised text-text'}"
 					>
 						{#if msg.role === 'assistant' && msg.content === '' && streaming && i === messages.length - 1}
 							<span class="inline-flex gap-1">
-								<span class="h-1.5 w-1.5 animate-bounce rounded-full bg-[#888780]"></span>
+								<span class="h-1.5 w-1.5 animate-bounce rounded-full bg-text-muted"></span>
 								<span
-									class="h-1.5 w-1.5 animate-bounce rounded-full bg-[#888780]"
+									class="h-1.5 w-1.5 animate-bounce rounded-full bg-text-muted"
 									style="animation-delay: 0.15s"
 								></span>
 								<span
-									class="h-1.5 w-1.5 animate-bounce rounded-full bg-[#888780]"
+									class="h-1.5 w-1.5 animate-bounce rounded-full bg-text-muted"
 									style="animation-delay: 0.3s"
 								></span>
 							</span>
@@ -177,11 +177,11 @@
 						{#if msg.role === 'assistant' && msg.content && (i < messages.length - 1 || !streaming)}
 							{@const mentioned = extractMentionedTokens(msg.content)}
 							{#if mentioned.length > 0}
-								<div class="mt-2 flex flex-wrap gap-1.5 border-t border-black/5 pt-2">
+								<div class="mt-2 flex flex-wrap gap-1.5 border-t border-border pt-2">
 									{#each mentioned as t (t.currency_id)}
 										<a
 											href={`/draft?highlight=${t.currency_id}`}
-											class="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-[#534ab7] no-underline shadow-sm hover:underline"
+											class="rounded-full bg-surface px-2.5 py-1 text-[11px] font-semibold text-primary no-underline shadow-sm hover:underline"
 										>
 											{(t.symbol ?? '').toUpperCase()} → Draft
 										</a>
@@ -202,12 +202,12 @@
 			disabled={streaming}
 			placeholder="Ask the mentor anything about tokens or sectors…"
 			rows="1"
-			class="flex-1 resize-none rounded-xl border border-black/10 bg-white px-3.5 py-2.5 text-sm text-[#1c1b22] outline-none focus:border-[#534ab7]"
+			class="flex-1 resize-none rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm text-text outline-none focus:border-primary"
 		></textarea>
 		<button
 			onclick={() => send()}
 			disabled={streaming || !input.trim()}
-			class="cursor-pointer rounded-xl bg-[#534ab7] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#453fa0] disabled:cursor-not-allowed disabled:opacity-40"
+			class="cursor-pointer rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
 		>
 			Send
 		</button>
