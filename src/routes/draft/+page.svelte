@@ -41,12 +41,21 @@
 	let isPaper = $state(false);
 
 	// ── Sector visual config ───────────────────────────────────────────
+	// bg/dimBg are computed tints of the sector color so they adapt to
+	// dark/light theme automatically instead of hardcoding per-theme values.
+	function sectorStyle(varName: string) {
+		return {
+			color: `var(--color-sector-${varName})`,
+			bg: `color-mix(in oklab, var(--color-sector-${varName}) 18%, transparent)`,
+			dimBg: `color-mix(in oklab, var(--color-sector-${varName}) 8%, transparent)`
+		};
+	}
 	const SECTOR_STYLE: Record<string, { color: string; bg: string; dimBg: string }> = {
-		l1: { color: '#0F6E56', bg: '#E1F5EE', dimBg: '#f0faf6' },
-		l2: { color: '#2563EB', bg: '#dbeafe', dimBg: '#eff6ff' },
-		defi: { color: '#534AB7', bg: '#eeedfe', dimBg: '#f5f4ff' },
-		meme: { color: '#993C1D', bg: '#FAECE7', dimBg: '#fdf5f2' },
-		wildcard: { color: '#D97706', bg: '#fef3c7', dimBg: '#fffbeb' }
+		l1: sectorStyle('l1'),
+		l2: sectorStyle('l2'),
+		defi: sectorStyle('defi'),
+		meme: sectorStyle('meme'),
+		wildcard: sectorStyle('wildcard')
 	};
 
 	// ── Lifecycle ──────────────────────────────────────────────────────
@@ -185,7 +194,14 @@
 	}
 
 	function avatarBg(sym: string): string {
-		const palette = ['#534AB7', '#0F6E56', '#2563EB', '#993C1D', '#D97706', '#6366f1', '#0891b2'];
+		const palette = [
+			'var(--color-primary)',
+			'var(--color-sector-l1)',
+			'var(--color-sector-l2)',
+			'var(--color-sector-defi)',
+			'var(--color-sector-meme)',
+			'var(--color-sector-wildcard)'
+		];
 		let h = 0;
 		for (const c of sym) h = (h * 31 + c.charCodeAt(0)) & 0xffffff;
 		return palette[Math.abs(h) % palette.length];
@@ -227,35 +243,35 @@
 	}
 </script>
 
-<div class="min-h-screen bg-[#F8F8F7]">
+<div class="min-h-screen bg-bg">
 	<div class="mx-auto flex max-w-4xl flex-col gap-5 px-4 py-6">
 		<!-- ── Header ──────────────────────────────────────────────── -->
 		<header
-			class="flex items-center justify-between rounded-xl border border-black/5 bg-white px-5 py-4 shadow-sm"
+			class="flex items-center justify-between rounded-xl border border-border bg-surface px-5 py-4 shadow-sm"
 		>
 			<div>
 				<div class="flex items-center gap-2">
-					<h1 class="text-lg leading-tight font-semibold text-[#1c1b22]">
+					<h1 class="text-lg leading-tight font-semibold text-text">
 						Draft — {contestType === 'weekly' ? 'Weekly Contest' : 'Daily Contest'}
 					</h1>
 					{#if contestType === 'weekly'}
 						<span
-							class="rounded-full bg-[#fef3c7] px-2 py-0.5 text-[10px] font-bold text-[#d97706] uppercase"
+							class="rounded-full bg-warning/15 px-2 py-0.5 text-[10px] font-bold text-warning uppercase"
 							>7-day · 2x XP</span
 						>
 					{/if}
 					{#if isPaper}
 						<span
-							class="rounded-full bg-[#e1f5ee] px-2 py-0.5 text-[10px] font-bold text-[#0f6e56] uppercase"
+							class="rounded-full bg-positive/15 px-2 py-0.5 text-[10px] font-bold text-positive uppercase"
 							>Practice mode</span
 						>
 					{/if}
 				</div>
-				<p class="mt-0.5 text-[11px] font-medium tracking-wider text-[#888780] uppercase">
+				<p class="mt-0.5 text-[11px] font-medium tracking-wider text-text-muted uppercase">
 					Strategic Selection Phase
 				</p>
 			</div>
-			<div class="flex items-center gap-1.5 rounded-full bg-[#FAECE7] px-3 py-1.5 text-[#993C1D]">
+			<div class="flex items-center gap-1.5 rounded-full bg-warning/15 px-3 py-1.5 text-warning">
 				<svg
 					class="h-3.5 w-3.5"
 					fill="none"
@@ -271,17 +287,17 @@
 
 		<!-- ── VS Bar ──────────────────────────────────────────────── -->
 		<div
-			class="flex items-center justify-between gap-4 rounded-xl border border-black/5 bg-white px-5 py-4 shadow-sm"
+			class="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface px-5 py-4 shadow-sm"
 		>
 			<div class="flex flex-1 items-center gap-3">
 				<div class="relative">
 					<div
-						class="flex h-11 w-11 items-center justify-center rounded-full bg-[#534AB7] text-sm font-semibold text-white"
+						class="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white"
 					>
 						YOU
 					</div>
 					<div
-						class="absolute -right-0.5 -bottom-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-[#0F6E56]"
+						class="absolute -right-0.5 -bottom-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-surface bg-positive"
 					>
 						<svg class="h-2 w-2 text-white" fill="currentColor" viewBox="0 0 20 20">
 							<path
@@ -293,18 +309,18 @@
 					</div>
 				</div>
 				<div>
-					<p class="text-sm font-semibold text-[#1c1b22]">You</p>
-					<p class="text-[11px] text-[#888780]">Rank #42 · 64% Win Rate</p>
+					<p class="text-sm font-semibold text-text">You</p>
+					<p class="text-[11px] text-text-muted">Rank #42 · 64% Win Rate</p>
 				</div>
 			</div>
-			<span class="text-xs font-bold tracking-widest text-[#888780] uppercase opacity-40">vs</span>
+			<span class="text-xs font-bold tracking-widest text-text-muted uppercase opacity-40">vs</span>
 			<div class="flex flex-1 items-center justify-end gap-3 text-right">
 				<div>
-					<p class="text-sm font-semibold text-[#1c1b22]">CryptoWhale_88</p>
-					<p class="text-[11px] text-[#888780]">Rank #12 · 71% Win Rate</p>
+					<p class="text-sm font-semibold text-text">CryptoWhale_88</p>
+					<p class="text-[11px] text-text-muted">Rank #12 · 71% Win Rate</p>
 				</div>
 				<div
-					class="flex h-11 w-11 items-center justify-center rounded-full bg-[#5d5d6b] text-xs font-semibold text-white"
+					class="flex h-11 w-11 items-center justify-center rounded-full bg-text-secondary text-xs font-semibold text-white"
 				>
 					CW
 				</div>
@@ -315,15 +331,15 @@
 			<div class="flex flex-col gap-3">
 				<div class="grid grid-cols-2 gap-3 max-sm:grid-cols-1">
 					{#each [0, 1, 2, 3] as i (i)}
-						<div class="h-32 animate-pulse rounded-xl bg-white shadow-sm"></div>
+						<div class="h-32 animate-pulse rounded-xl bg-surface shadow-sm"></div>
 					{/each}
 				</div>
-				<div class="h-24 animate-pulse rounded-xl bg-white shadow-sm"></div>
-				<div class="h-105 animate-pulse rounded-xl bg-white shadow-sm"></div>
+				<div class="h-24 animate-pulse rounded-xl bg-surface shadow-sm"></div>
+				<div class="h-105 animate-pulse rounded-xl bg-surface shadow-sm"></div>
 			</div>
 		{:else if loadError}
 			<div
-				class="flex items-center gap-3 rounded-xl border border-[#993C1D]/20 bg-[#FAECE7] px-4 py-3 text-sm text-[#993C1D]"
+				class="flex items-center gap-3 rounded-xl border border-negative/20 bg-negative/10 px-4 py-3 text-sm text-negative"
 			>
 				<svg
 					class="h-4 w-4 shrink-0"
@@ -346,8 +362,8 @@
 			<!-- ── Lineup Slots ──────────────────────────────────── -->
 			<section>
 				<div class="mb-3 flex items-center justify-between px-0.5">
-					<h2 class="text-sm font-semibold text-[#1c1b22]">Your Lineup</h2>
-					<span class="text-[11px] font-medium tracking-wider text-[#888780] uppercase">
+					<h2 class="text-sm font-semibold text-text">Your Lineup</h2>
+					<span class="text-[11px] font-medium tracking-wider text-text-muted uppercase">
 						{slotsFilledCount} / 5 Slots Filled
 					</span>
 				</div>
@@ -362,9 +378,9 @@
 
 						{#if pick}
 							{@const tkn = tokenMap.get(pick.currencyId)}
-							t {@const hasBoost = activeBoosts.get(sector.id)}
+							{@const hasBoost = activeBoosts.get(sector.id)}
 							<div
-								class="flex h-32 cursor-default flex-col rounded-xl border bg-white p-4 shadow-sm"
+								class="flex h-32 cursor-default flex-col rounded-xl border bg-surface p-4 shadow-sm"
 								style="border-color: {hasBoost ? style.color : style.color + '30'}"
 							>
 								<div class="flex items-start justify-between">
@@ -383,7 +399,7 @@
 										>
 											{#if hasBoost}
 												<span
-													class="rounded-full bg-[#534AB7] px-2 py-0.5 text-[10px] font-bold text-white uppercase"
+													class="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white uppercase"
 													>⚡ Boost</span
 												>
 											{/if}
@@ -396,7 +412,7 @@
 										<button
 											type="button"
 											onclick={() => removePick(sector.id)}
-											class="flex h-5 w-5 cursor-pointer items-center justify-center rounded-full text-xl leading-none text-[#888780] hover:bg-[#f0f0f0]"
+											class="flex h-5 w-5 cursor-pointer items-center justify-center rounded-full text-xl leading-none text-text-muted hover:bg-hover"
 											title="Remove pick">×</button
 										>
 									</div>
@@ -409,20 +425,20 @@
 										{pick.symbol.charAt(0).toUpperCase()}
 									</div>
 									<div>
-										<p class="text-sm font-semibold text-[#1c1b22]">{pick.symbol.toUpperCase()}</p>
+										<p class="text-sm font-semibold text-text">{pick.symbol.toUpperCase()}</p>
 										{#if tkn?.change24h != null}
 											<p
 												class="text-xs font-medium"
-												style="color: {tkn.change24h >= 0 ? '#0F6E56' : '#993C1D'}"
+												style="color: {tkn.change24h >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'}"
 											>
 												{fmtChg(tkn.change24h)}
 											</p>
 										{:else}
-											<p class="text-[11px] text-[#888780]">{pick.name}</p>
+											<p class="text-[11px] text-text-muted">{pick.name}</p>
 										{/if}
 									</div>
 									{#if tkn?.price != null}
-										<span class="ml-auto text-xs font-medium text-[#888780]"
+										<span class="ml-auto text-xs font-medium text-text-muted"
 											>{fmtPrice(tkn.price)}</span
 										>
 									{/if}
@@ -445,7 +461,7 @@
 									{#if sectorChg != null}
 										<span
 											class="text-[11px] font-medium"
-											style="color: {sectorChg >= 0 ? '#0F6E56' : '#993C1D'}"
+											style="color: {sectorChg >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'}"
 											>{fmtChg(sectorChg)}</span
 										>
 									{/if}
@@ -475,23 +491,23 @@
 							<button
 								type="button"
 								onclick={() => selectSector(sector.id)}
-								class="flex h-32 cursor-pointer flex-col rounded-xl border border-dashed border-black/10 bg-white p-4 shadow-sm transition-all hover:border-black/20 hover:bg-[#fafafa]"
+								class="flex h-32 cursor-pointer flex-col rounded-xl border border-dashed border-border bg-surface p-4 shadow-sm transition-all hover:border-text-muted hover:bg-hover"
 							>
 								<div class="flex items-start justify-between">
 									<span
-										class="rounded-full bg-[#f0f0f0] px-2 py-0.5 text-[10px] font-bold text-[#888780] uppercase"
+										class="rounded-full bg-hover px-2 py-0.5 text-[10px] font-bold text-text-muted uppercase"
 									>
 										{sector.name} Sector
 									</span>
 									{#if sectorChg != null}
 										<span
 											class="text-[11px] font-medium"
-											style="color: {sectorChg >= 0 ? '#0F6E56' : '#993C1D'}"
+											style="color: {sectorChg >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'}"
 											>{fmtChg(sectorChg)}</span
 										>
 									{/if}
 								</div>
-								<div class="mt-auto flex flex-col items-center gap-1 text-[#aaa]">
+								<div class="mt-auto flex flex-col items-center gap-1 text-text-muted">
 									<svg
 										class="h-5 w-5"
 										fill="none"
@@ -522,9 +538,9 @@
 
 					{#if pick}
 						{@const tkn = tokenMap.get(pick.currencyId)}
-						t {@const hasBoost = activeBoosts.get(sector.id)}
+						{@const hasBoost = activeBoosts.get(sector.id)}
 						<div
-							class="flex cursor-default items-center gap-4 rounded-xl border bg-white p-4 shadow-sm"
+							class="flex cursor-default items-center gap-4 rounded-xl border bg-surface p-4 shadow-sm"
 							style="border-color: {hasBoost ? style.color : style.color + '30'}"
 						>
 							<div class="flex flex-1 flex-col gap-2">
@@ -533,7 +549,7 @@
 										class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
 										style="background: {style.bg}; color: {style.color}">Wildcard Sector</span
 									>
-									<span class="text-[11px] text-[#888780]">· Any Token Allowed</span>
+									<span class="text-[11px] text-text-muted">· Any Token Allowed</span>
 								</div>
 								<div class="flex items-center gap-3">
 									<div
@@ -543,20 +559,20 @@
 										{pick.symbol.charAt(0).toUpperCase()}
 									</div>
 									<div>
-										<p class="text-sm font-semibold text-[#1c1b22]">{pick.symbol.toUpperCase()}</p>
+										<p class="text-sm font-semibold text-text">{pick.symbol.toUpperCase()}</p>
 										{#if tkn?.change24h != null}
 											<p
 												class="text-xs font-medium"
-												style="color: {tkn.change24h >= 0 ? '#0F6E56' : '#993C1D'}"
+												style="color: {tkn.change24h >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'}"
 											>
 												{fmtChg(tkn.change24h)}
 											</p>
 										{:else}
-											<p class="text-[11px] text-[#888780]">{pick.name}</p>
+											<p class="text-[11px] text-text-muted">{pick.name}</p>
 										{/if}
 									</div>
 									{#if tkn?.price != null}
-										<span class="ml-auto text-xs font-medium text-[#888780]"
+										<span class="ml-auto text-xs font-medium text-text-muted"
 											>{fmtPrice(tkn.price)}</span
 										>
 									{/if}
@@ -578,7 +594,7 @@
 								<button
 									type="button"
 									onclick={() => removePick(sector.id)}
-									class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-xl leading-none text-[#888780] hover:bg-[#f0f0f0]"
+									class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-xl leading-none text-text-muted hover:bg-hover"
 									title="Remove">×</button
 								>
 							</div>
@@ -600,7 +616,7 @@
 									{#if sectorChg != null}
 										<span
 											class="text-[11px] font-medium"
-											style="color: {sectorChg >= 0 ? '#0F6E56' : '#993C1D'}"
+											style="color: {sectorChg >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'}"
 											>{fmtChg(sectorChg)}</span
 										>
 									{/if}
@@ -629,27 +645,27 @@
 						<button
 							type="button"
 							onclick={() => selectSector(sector.id)}
-							class="flex w-full cursor-pointer items-center justify-between rounded-xl border border-dashed border-black/10 bg-white p-4 shadow-sm transition-all hover:border-black/20"
+							class="flex w-full cursor-pointer items-center justify-between rounded-xl border border-dashed border-border bg-surface p-4 shadow-sm transition-all hover:border-text-muted"
 						>
 							<div class="flex flex-col gap-1 text-left">
 								<div class="flex flex-wrap items-center gap-2">
 									<span
-										class="rounded-full bg-[#f0f0f0] px-2 py-0.5 text-[10px] font-bold text-[#888780] uppercase"
+										class="rounded-full bg-hover px-2 py-0.5 text-[10px] font-bold text-text-muted uppercase"
 										>Wildcard Sector</span
 									>
-									<span class="text-[11px] text-[#888780]">· Any Token Allowed</span>
+									<span class="text-[11px] text-text-muted">· Any Token Allowed</span>
 									{#if sectorChg != null}
 										<span
 											class="text-[11px] font-medium"
-											style="color: {sectorChg >= 0 ? '#0F6E56' : '#993C1D'}"
+											style="color: {sectorChg >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'}"
 											>{fmtChg(sectorChg)}</span
 										>
 									{/if}
 								</div>
-								<span class="text-xs font-medium text-[#888780]">Draft your Wildcard pick</span>
+								<span class="text-xs font-medium text-text-muted">Draft your Wildcard pick</span>
 							</div>
 							<svg
-								class="h-5 w-5 shrink-0 text-[#ccc]"
+								class="h-5 w-5 shrink-0 text-text-muted"
 								fill="none"
 								viewBox="0 0 24 24"
 								stroke="currentColor"
@@ -670,13 +686,13 @@
 			<!-- ── Token Pool ──────────────────────────────────────── -->
 			<section
 				id="token-pool"
-				class="overflow-hidden rounded-xl border border-black/5 bg-white shadow-sm"
+				class="overflow-hidden rounded-xl border border-border bg-surface shadow-sm"
 			>
 				<!-- Pool header -->
-				<div class="flex flex-col gap-3 border-b border-black/5 p-4">
+				<div class="flex flex-col gap-3 border-b border-border p-4">
 					<div class="flex items-center justify-between">
-						<h2 class="text-sm font-semibold text-[#1c1b22]">Token Pool</h2>
-						<div class="flex items-center gap-1.5 text-[#888780]">
+						<h2 class="text-sm font-semibold text-text">Token Pool</h2>
+						<div class="flex items-center gap-1.5 text-text-muted">
 							<svg
 								class="h-3 w-3"
 								fill="none"
@@ -705,7 +721,7 @@
 								class="relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all"
 								style={isActive
 									? `background: ${style.color}; color: white`
-									: `background: #f0efef; color: #5d5d6b`}
+									: `background: var(--color-hover); color: var(--color-text-secondary)`}
 							>
 								{sector.name}
 								{#if filled}
@@ -732,7 +748,7 @@
 						</div>
 						<div class="relative flex-1">
 							<svg
-								class="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-[#888780]"
+								class="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted"
 								fill="none"
 								viewBox="0 0 24 24"
 								stroke="currentColor"
@@ -744,24 +760,24 @@
 								type="text"
 								placeholder="Search symbol or name…"
 								bind:value={search}
-								class="h-8 w-full rounded-lg border border-black/10 bg-[#fafafa] py-1.5 pr-3 pl-8 text-xs transition-colors outline-none focus:border-[#534AB7] focus:bg-white"
+								class="h-8 w-full rounded-lg border border-border bg-surface-raised py-1.5 pr-3 pl-8 text-xs transition-colors outline-none focus:border-primary focus:bg-surface"
 							/>
 						</div>
 					</div>
 				</div>
 
 				<!-- Table header -->
-				<div class="grid grid-cols-12 border-b border-black/5 bg-[#fafafa] px-4 py-2">
-					<div class="col-span-6 text-[10px] font-bold tracking-wider text-[#888780] uppercase">
+				<div class="grid grid-cols-12 border-b border-border bg-surface-raised px-4 py-2">
+					<div class="col-span-6 text-[10px] font-bold tracking-wider text-text-muted uppercase">
 						Token
 					</div>
 					<div
-						class="col-span-3 text-right text-[10px] font-bold tracking-wider text-[#888780] uppercase"
+						class="col-span-3 text-right text-[10px] font-bold tracking-wider text-text-muted uppercase"
 					>
 						24h
 					</div>
 					<div
-						class="col-span-3 text-right text-[10px] font-bold tracking-wider text-[#888780] uppercase max-sm:hidden"
+						class="col-span-3 text-right text-[10px] font-bold tracking-wider text-text-muted uppercase max-sm:hidden"
 					>
 						Volume
 					</div>
@@ -770,7 +786,7 @@
 				<!-- Token rows -->
 				<div class="max-h-105 divide-y divide-black/5 overflow-y-auto">
 					{#if filteredTokens.length === 0}
-						<div class="px-4 py-10 text-center text-sm text-[#888780]">
+						<div class="px-4 py-10 text-center text-sm text-text-muted">
 							No tokens match "{search}"
 						</div>
 					{/if}
@@ -782,8 +798,8 @@
 							disabled={inLineup}
 							onclick={() => addToken(token)}
 							class="grid w-full cursor-pointer grid-cols-12 items-center px-4 py-3 text-left transition-colors
-								{inLineup ? 'cursor-default bg-[#f8f8f8] opacity-60' : 'bg-white hover:bg-[#f8f6ff]'}
-								{isHighlighted ? 'ring-2 ring-inset ring-[#534AB7]' : ''}"
+								{inLineup ? 'cursor-default bg-hover opacity-60' : 'bg-surface hover:bg-primary-muted'}
+								{isHighlighted ? 'ring-2 ring-inset ring-primary' : ''}"
 						>
 							<div class="col-span-6 flex items-center gap-3">
 								<div
@@ -794,38 +810,38 @@
 								</div>
 								<div class="min-w-0 flex-1">
 									<div class="flex items-center gap-1.5">
-										<p class="text-sm font-semibold text-[#1c1b22]">
+										<p class="text-sm font-semibold text-text">
 											{(token.symbol ?? '').toUpperCase()}
 										</p>
 										{#if token.rank}
 											<span
-												class="rounded bg-[#f0f0f0] px-1 py-0.5 text-[9px] font-medium text-[#888780]"
+												class="rounded bg-hover px-1 py-0.5 text-[9px] font-medium text-text-muted"
 												>#{token.rank}</span
 											>
 										{/if}
 										{#if inLineup}
 											<span
-												class="ml-1 rounded-full bg-[#eeedfe] px-2 py-0.5 text-[10px] font-semibold text-[#534AB7]"
+												class="ml-1 rounded-full bg-primary-muted px-2 py-0.5 text-[10px] font-semibold text-primary"
 												>In lineup</span
 											>
 										{/if}
 									</div>
-									<p class="truncate text-[11px] text-[#888780]">{token.name}</p>
+									<p class="truncate text-[11px] text-text-muted">{token.name}</p>
 								</div>
 							</div>
 							<div class="col-span-3 text-right">
 								{#if token.change24h != null}
 									<span
 										class="text-xs font-semibold"
-										style="color: {token.change24h >= 0 ? '#0F6E56' : '#993C1D'}"
+										style="color: {token.change24h >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'}"
 										>{fmtChg(token.change24h)}</span
 									>
 								{:else}
-									<span class="text-xs text-[#888780]">—</span>
+									<span class="text-xs text-text-muted">—</span>
 								{/if}
 							</div>
 							<div class="col-span-3 text-right max-sm:hidden">
-								<span class="text-xs text-[#888780]">{fmtVol(token.volume24h)}</span>
+								<span class="text-xs text-text-muted">{fmtVol(token.volume24h)}</span>
 							</div>
 						</button>
 					{/each}
@@ -843,7 +859,7 @@
 								class="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold"
 								style={filled
 									? `background: ${style.bg}; color: ${style.color}`
-									: 'background: #f0f0f0; color: #bbb'}
+									: 'background: var(--color-hover); color: var(--color-text-muted)'}
 							>
 								{#if filled}
 									<svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
@@ -876,8 +892,8 @@
 					disabled={slotsFilledCount !== 5 || submitting}
 					class="flex h-14 w-full items-center justify-center gap-2.5 rounded-xl text-base font-bold tracking-wide shadow-lg transition-all active:scale-[0.98]
 						{slotsFilledCount === 5
-						? 'cursor-pointer bg-[#534AB7] text-white hover:bg-[#453fa0]'
-						: 'cursor-not-allowed bg-[#e0e0e0] text-[#aaa]'}"
+						? 'cursor-pointer bg-primary text-white hover:bg-primary-hover'
+						: 'cursor-not-allowed bg-hover text-text-muted'}"
 				>
 					{#if submitting}
 						<svg class="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
