@@ -47,6 +47,7 @@ export const contests = pgTable('contests', {
 export const lineups = pgTable('lineups', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	contestId: uuid('contest_id').references(() => contests.id),
+	lobbyId: uuid('lobby_id').references(() => lobbies.id), // exactly one of contestId/lobbyId is set
 	userId: uuid('user_id').references(() => users.id),
 	locked: boolean('locked').default(false),
 	finalScore: numeric('final_score').default('0'),
@@ -67,6 +68,46 @@ export const lineupPicks = pgTable('lineup_picks', {
 	exitPrice: numeric('exit_price'), // price at contest resolution
 	pctChange: numeric('pct_change'), // ((exit - entry) / entry) * 100
 	score: numeric('score').default('0') // weighted score for this pick
+});
+
+// ─── Lobbies ──────────────────────────────────────────────────────────────────
+// A lobby is a multiplayer (3+) contest, parallel to the 2-player `contests`
+// table above rather than a generalization of it — see plan doc for why.
+
+export const lobbies = pgTable('lobbies', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	createdBy: uuid('created_by').references(() => users.id),
+	contestType: text('contest_type').default('daily'), // 'daily' | 'weekly'
+	format: text('format').notNull(), // 'fixed' | 'open'
+	size: integer('size'), // required for 'fixed', optional cap for 'open'
+	status: text('status').default('waiting'), // 'waiting' | 'drafting' | 'live' | 'resolved'
+	startAt: timestamp('start_at'),
+	endAt: timestamp('end_at'),
+	winnerId: uuid('winner_id').references(() => users.id), // 1st place
+	createdAt: timestamp('created_at').defaultNow()
+});
+
+// ─── Lobby Participants ───────────────────────────────────────────────────────
+
+export const lobbyParticipants = pgTable('lobby_participants', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	lobbyId: uuid('lobby_id').references(() => lobbies.id),
+	userId: uuid('user_id').references(() => users.id),
+	rank: integer('rank'), // set at resolution: 1 = winner, 2 = 2nd, etc.
+	xpEarned: integer('xp_earned'),
+	joinedAt: timestamp('joined_at').defaultNow()
+});
+
+// ─── Lobby Queue ──────────────────────────────────────────────────────────────
+// Fixed-size auto-match queue, mirrors matchmakingQueue's shape
+
+export const lobbyQueue = pgTable('lobby_queue', {
+	userId: uuid('user_id')
+		.primaryKey()
+		.references(() => users.id),
+	size: integer('size').notNull(),
+	contestType: text('contest_type').notNull(),
+	queuedAt: timestamp('queued_at').defaultNow().notNull()
 });
 
 // ─── Leagues ──────────────────────────────────────────────────────────────────

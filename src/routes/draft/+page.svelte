@@ -25,6 +25,7 @@
 
 	// ── State ──────────────────────────────────────────────────────────
 	let contestId = $state('');
+	let lobbyId = $state('');
 	let tokens = $state<Token[]>([]);
 	let sectorChanges = $state<Map<string, number | null>>(new Map());
 	let lineup = $state<Pick[]>([]);
@@ -62,6 +63,7 @@
 	onMount(() => {
 		const p = new URLSearchParams(window.location.search);
 		contestId = p.get('contestId') ?? '';
+		lobbyId = p.get('lobbyId') ?? '';
 		highlightId = p.get('highlight') ?? '';
 		contestType = p.get('type') === 'weekly' ? 'weekly' : 'daily';
 		isPaper = p.get('mode') === 'paper';
@@ -215,6 +217,20 @@
 		}
 		submitting = true;
 		try {
+			if (lobbyId) {
+				const r2 = await fetch(`/api/lobby/${lobbyId}/lineup`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ picks: lineup })
+				});
+				if (!r2.ok) {
+					const errData = await r2.json().catch(() => ({}));
+					throw new Error((errData as { error?: string }).error ?? 'Failed to submit lineup');
+				}
+				window.location.href = `/lobby/${lobbyId}/result`;
+				return;
+			}
+
 			if (!contestId) {
 				const r = await fetch('/api/contests', {
 					method: 'POST',
@@ -252,9 +268,18 @@
 			<div>
 				<div class="flex items-center gap-2">
 					<h1 class="text-lg leading-tight font-semibold text-text">
-						Draft — {contestType === 'weekly' ? 'Weekly Contest' : 'Daily Contest'}
+						Draft — {lobbyId
+							? 'Multiplayer Lobby'
+							: contestType === 'weekly'
+								? 'Weekly Contest'
+								: 'Daily Contest'}
 					</h1>
-					{#if contestType === 'weekly'}
+					{#if lobbyId}
+						<span
+							class="rounded-full bg-sector-defi/15 px-2 py-0.5 text-[10px] font-bold text-sector-defi uppercase"
+							>Ranked lobby</span
+						>
+					{:else if contestType === 'weekly'}
 						<span
 							class="rounded-full bg-warning/15 px-2 py-0.5 text-[10px] font-bold text-warning uppercase"
 							>7-day · 2x XP</span

@@ -1,6 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { contests, userBadges, users } from '$lib/server/schema';
+import { contests, lobbies, userBadges, users } from '$lib/server/schema';
 import { BADGES } from '$lib/badges';
 
 async function grantIfMissing(userId: string, candidateCodes: string[]): Promise<string[]> {
@@ -28,11 +28,19 @@ export async function awardWinBadges(userId: string): Promise<string[]> {
 		.limit(1)
 		.then((rows) => rows[0] ?? null);
 
-	const totalWins = await db
+	const contestWins = await db
 		.select({ id: contests.id })
 		.from(contests)
 		.where(eq(contests.winnerId, userId))
 		.then((rows) => rows.length);
+
+	const lobbyWins = await db
+		.select({ id: lobbies.id })
+		.from(lobbies)
+		.where(eq(lobbies.winnerId, userId))
+		.then((rows) => rows.length);
+
+	const totalWins = contestWins + lobbyWins;
 
 	const streak = user?.streak ?? 0;
 	const candidates: string[] = [];

@@ -5,7 +5,6 @@
 	import { invalidateAll } from '$app/navigation';
 	import { appKit } from '$lib/appkit';
 	import favicon from '$lib/assets/images/logo_v4_appicon.svg';
-	import navLogo from '$lib/assets/images/logo_v5_navbar.svg';
 	import { SiweMessage } from 'siwe';
 	import bs58 from 'bs58';
 
@@ -16,9 +15,50 @@
 	let walletConnected = $state(false);
 	let signError = $state(false);
 	let isLight = $state(false);
+	let openNavGroup = $state<string | null>(null);
+
+	const NAV_GROUPS: { label: string; items: { href: string; label: string }[] }[] = [
+		{
+			label: 'play',
+			items: [
+				{ href: '/draft', label: 'draft' },
+				{ href: '/matchmaking', label: 'matchmaking' },
+				{ href: '/lobby', label: 'lobbies' },
+				{ href: '/contest/result', label: 'result' }
+			]
+		},
+		{
+			label: 'compete',
+			items: [
+				{ href: '/leagues', label: 'leagues' },
+				{ href: '/leaderboard', label: 'leaderboard' }
+			]
+		},
+		{
+			label: 'learn',
+			items: [
+				{ href: '/mentor', label: 'mentor' },
+				{ href: '/research', label: 'research' }
+			]
+		}
+	];
+
+	function groupIsActive(group: (typeof NAV_GROUPS)[number]): boolean {
+		return group.items.some((i) => page.url.pathname.startsWith(i.href));
+	}
 
 	onMount(() => {
 		isLight = document.documentElement.getAttribute('data-theme') === 'light';
+	});
+
+	onMount(() => {
+		function handleClickOutside(e: MouseEvent) {
+			if (!(e.target as HTMLElement).closest('[data-nav-dropdown]')) {
+				openNavGroup = null;
+			}
+		}
+		document.addEventListener('click', handleClickOutside);
+		return () => document.removeEventListener('click', handleClickOutside);
 	});
 
 	function toggleTheme() {
@@ -242,59 +282,104 @@
 
 <nav class="sticky top-0 z-50 flex h-11 items-center border-b border-border bg-surface px-3.5">
 	<div class="mx-auto flex w-full max-w-6xl items-center justify-between">
-		<a href="/" class="flex items-center no-underline">
-			<img src={navLogo} alt="CoinDraft" class="h-7 w-auto" />
+		<a href="/" class="flex items-center gap-2 no-underline">
+			<svg width="30" height="30" viewBox="0 0 40 40" aria-hidden="true">
+				<rect
+					x="4"
+					y="6"
+					width="30"
+					height="30"
+					rx="7"
+					fill="var(--color-primary)"
+					transform="rotate(-8 19 21)"
+				/>
+				<line
+					x1="12"
+					y1="16"
+					x2="26"
+					y2="16"
+					stroke="white"
+					stroke-width="2"
+					stroke-linecap="round"
+					opacity="0.9"
+					transform="rotate(-8 19 21)"
+				/>
+				<line
+					x1="12"
+					y1="22"
+					x2="22"
+					y2="22"
+					stroke="white"
+					stroke-width="2"
+					stroke-linecap="round"
+					opacity="0.6"
+					transform="rotate(-8 19 21)"
+				/>
+				<circle cx="30" cy="10" r="9" fill="var(--color-positive)" stroke="var(--color-surface)" stroke-width="2" />
+				<text
+					x="30"
+					y="13.5"
+					text-anchor="middle"
+					font-family="Inter, sans-serif"
+					font-weight="700"
+					font-size="9"
+					fill="white">$</text
+				>
+			</svg>
+			<span class="text-lg font-semibold tracking-tight text-text">CoinDraft</span>
 		</a>
 
-		<div class="ml-8 flex min-w-0 flex-1 gap-6 overflow-x-auto max-sm:ml-3 max-sm:gap-4">
+		<div class="ml-8 flex min-w-0 flex-1 items-center gap-1.5 max-sm:ml-3">
 			<a
 				href="/"
-				class="shrink-0 rounded px-2 py-1 text-sm text-text-secondary transition hover:bg-hover hover:text-text"
+				class="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-text-secondary transition hover:bg-hover hover:text-text"
 				class:bg-primary-muted={page.url.pathname === '/'}
-				class:text-primary={page.url.pathname === '/'}>home</a
+				class:text-primary={page.url.pathname === '/'}>Home</a
 			>
 			<a
 				href="/dashboard"
-				class="shrink-0 rounded px-2 py-1 text-sm text-text-secondary transition hover:bg-hover hover:text-text"
+				class="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-text-secondary transition hover:bg-hover hover:text-text"
 				class:bg-primary-muted={page.url.pathname.startsWith('/dashboard')}
-				class:text-primary={page.url.pathname.startsWith('/dashboard')}>dashboard</a
+				class:text-primary={page.url.pathname.startsWith('/dashboard')}>Dashboard</a
 			>
-			<a
-				href="/leagues"
-				class="shrink-0 rounded px-2 py-1 text-sm text-text-secondary transition hover:bg-hover hover:text-text"
-				class:bg-primary-muted={page.url.pathname.startsWith('/leagues')}
-				class:text-primary={page.url.pathname.startsWith('/leagues')}>leagues</a
-			>
-			<a
-				href="/leaderboard"
-				class="shrink-0 rounded px-2 py-1 text-sm text-text-secondary transition hover:bg-hover hover:text-text"
-				class:bg-primary-muted={page.url.pathname.startsWith('/leaderboard')}
-				class:text-primary={page.url.pathname.startsWith('/leaderboard')}>leaderboard</a
-			>
-			<a
-				href="/draft"
-				class="shrink-0 rounded px-2 py-1 text-sm text-text-secondary transition hover:bg-hover hover:text-text"
-				class:bg-primary-muted={page.url.pathname.startsWith('/draft')}
-				class:text-primary={page.url.pathname.startsWith('/draft')}>draft</a
-			>
-			<a
-				href="/mentor"
-				class="shrink-0 rounded px-2 py-1 text-sm text-text-secondary transition hover:bg-hover hover:text-text"
-				class:bg-primary-muted={page.url.pathname.startsWith('/mentor')}
-				class:text-primary={page.url.pathname.startsWith('/mentor')}>mentor</a
-			>
-			<a
-				href="/research"
-				class="shrink-0 rounded px-2 py-1 text-sm text-text-secondary transition hover:bg-hover hover:text-text"
-				class:bg-primary-muted={page.url.pathname.startsWith('/research')}
-				class:text-primary={page.url.pathname.startsWith('/research')}>research</a
-			>
-			<a
-				href="/contest/result"
-				class="shrink-0 rounded px-2 py-1 text-sm text-text-secondary transition hover:bg-hover hover:text-text"
-				class:bg-primary-muted={page.url.pathname.startsWith('/contest')}
-				class:text-primary={page.url.pathname.startsWith('/contest')}>result</a
-			>
+			{#each NAV_GROUPS as group (group.label)}
+				<div class="relative shrink-0" data-nav-dropdown>
+					<button
+						type="button"
+						onclick={() => (openNavGroup = openNavGroup === group.label ? null : group.label)}
+						class="flex cursor-pointer items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-text-secondary transition hover:bg-hover hover:text-text"
+						class:bg-primary-muted={groupIsActive(group)}
+						class:text-primary={groupIsActive(group)}
+					>
+						{group.label.charAt(0).toUpperCase() + group.label.slice(1)}
+						<svg
+							class="h-3 w-3 transition-transform {openNavGroup === group.label ? 'rotate-180' : ''}"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							stroke-width="2.5"
+						>
+							<polyline points="6 9 12 15 18 9" />
+						</svg>
+					</button>
+					{#if openNavGroup === group.label}
+						<div
+							class="absolute top-full left-0 z-50 mt-1 min-w-36 rounded-lg border border-border bg-surface p-1 shadow-lg"
+						>
+							{#each group.items as item (item.href)}
+								<a
+									href={item.href}
+									onclick={() => (openNavGroup = null)}
+									class="block rounded-md px-3 py-1.5 text-sm font-medium text-text-secondary no-underline transition hover:bg-hover hover:text-text"
+									class:bg-primary-muted={page.url.pathname.startsWith(item.href)}
+									class:text-primary={page.url.pathname.startsWith(item.href)}
+									>{item.label.charAt(0).toUpperCase() + item.label.slice(1)}</a
+								>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/each}
 		</div>
 
 		<div class="flex items-center gap-3">

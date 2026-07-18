@@ -4,7 +4,7 @@ import { contests, lineups, lineupPicks, users, leagueMembers } from '$lib/serve
 import { getSnapshot, extractPrice } from '$lib/server/sosovalue';
 import { calcPickScore } from '$lib/server/scoring';
 
-async function scoreLineupPicks(lineupId: string) {
+export async function scoreLineupPicks(lineupId: string) {
 	const picks = await db.select().from(lineupPicks).where(eq(lineupPicks.lineupId, lineupId));
 	const snapshots = await Promise.all(picks.map((p) => getSnapshot(p.currencyId).catch(() => null)));
 
