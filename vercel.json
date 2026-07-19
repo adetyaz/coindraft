@@ -5,12 +5,8 @@
 			"schedule": "0 0 * * *"
 		},
 		{
-			"path": "/api/cron/resolve-contests",
-			"schedule": "0 * * * *"
-		},
-		{
-			"path": "/api/cron/resolve-lobbies",
-			"schedule": "0 * * * *"
+			"path": "/api/cron/resolve-all",
+			"schedule": "5 0 * * *"
 		}
 	]
 }
