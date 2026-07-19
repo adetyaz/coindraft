@@ -40,6 +40,13 @@
 				{ href: '/mentor', label: 'mentor' },
 				{ href: '/research', label: 'research' }
 			]
+		},
+		{
+			label: 'help',
+			items: [
+				{ href: '/guide', label: 'how to use' },
+				{ href: '/docs', label: 'documentation' }
+			]
 		}
 	];
 
