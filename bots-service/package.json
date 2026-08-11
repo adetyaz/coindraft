@@ -1,0 +1,13 @@
+{
+	"name": "coindraft-bots-service",
+	"version": "1.0.0",
+	"private": true,
+	"description": "Always-on background worker that keeps seeded bot accounts queued in CoinDraft matchmaking. Lives on its own branch, deployed separately from the main app.",
+	"main": "keep-bots-online.cjs",
+	"scripts": {
+		"start": "node keep-bots-online.cjs"
+	},
+	"engines": {
+		"node": ">=20"
+	}
+}
