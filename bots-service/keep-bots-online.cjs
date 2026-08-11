@@ -19,6 +19,16 @@
 //
 // Requires SESSION_SECRET to match whatever the target deployment uses.
 
+// Render's free tier has no plan for background workers — only web services
+// get a free instance. So this process also binds an HTTP port and answers
+// health checks, purely to be classified as a "web service" for billing
+// purposes. The actual work (the bot rotation below) runs identically
+// either way — an external uptime pinger (e.g. UptimeRobot) hitting this
+// port every ~10 min is what keeps Render from sleeping the whole process
+// after 15 minutes of no HTTP traffic. If PORT isn't set (e.g. running
+// locally or on a real worker host), the HTTP server is skipped entirely.
+const PORT = process.env.PORT;
+
 const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
 const SESSION_SECRET = process.env.SESSION_SECRET;
 const POLL_MS = 10_000; // re-queue the on-duty bot before the app's 30s queue TTL expires
@@ -27,6 +37,16 @@ if (!SESSION_SECRET) {
 	console.error('SESSION_SECRET env var is required (must match the target deployment).');
 	process.exit(1);
 }
+
+// Belt-and-suspenders: runTick() already catches everything it can, but this
+// is meant to run unattended for weeks — one unforeseen error anywhere
+// should never be allowed to kill the whole process silently.
+process.on('unhandledRejection', (err) => {
+	console.error('Unhandled rejection (continuing):', err);
+});
+process.on('uncaughtException', (err) => {
+	console.error('Uncaught exception (continuing):', err);
+});
 
 const BOTS = [
 	{ id: 'f684269c-7d3d-40b0-a21b-98bb766d64ff', username: 'CryptoWhale_99' },
@@ -112,6 +132,10 @@ async function handleOpenContests(bot) {
 	return open.length > 0;
 }
 
+// Exposed via the health-check HTTP endpoint so you can see what's actually
+// happening from a browser, not just from log lines.
+const status = { startedAt: new Date().toISOString(), lastTickAt: null, lastEvent: 'starting up' };
+
 let tickRunning = false;
 
 async function tick() {
@@ -125,6 +149,7 @@ async function tick() {
 		return;
 	}
 	tickRunning = true;
+	status.lastTickAt = new Date().toISOString();
 	try {
 		await runTick();
 	} finally {
@@ -135,34 +160,44 @@ async function tick() {
 async function runTick() {
 	const bot = BOTS[dutyIndex];
 
-	// Always check for contests this bot already owes a lineup to first —
-	// covers the case where a real player's join call matched into this
-	// bot's queue slot since the bot's own last tick.
-	const hadOpenContest = await handleOpenContests(bot);
-	if (hadOpenContest) {
-		console.log(`[${bot.username}] handled its open contest(s) — rotating duty`);
-		dutyIndex = (dutyIndex + 1) % BOTS.length;
-		return;
-	}
-
+	// Everything below can throw on a transient network failure (Vercel
+	// hiccup, DNS blip, etc). This must never take down the whole
+	// long-running process — one failed tick should just be retried on the
+	// next interval, not crash the service that's supposed to run
+	// unattended 24/7.
 	try {
+		// Always check for contests this bot already owes a lineup to first —
+		// covers the case where a real player's join call matched into this
+		// bot's queue slot since the bot's own last tick.
+		const hadOpenContest = await handleOpenContests(bot);
+		if (hadOpenContest) {
+			console.log(`[${bot.username}] handled its open contest(s) — rotating duty`);
+			status.lastEvent = `${bot.username} handled its open contest(s)`;
+			dutyIndex = (dutyIndex + 1) % BOTS.length;
+			return;
+		}
+
 		const { ok, data } = await callApi(bot, '/api/matchmaking/join', {
 			method: 'POST',
 			body: JSON.stringify({ type: 'daily' })
 		});
 		if (!ok) {
 			console.warn(`[${bot.username}] join failed:`, data);
+			status.lastEvent = `${bot.username} join failed`;
 			return;
 		}
 		if (data.status === 'matched') {
 			console.log(`[${bot.username}] matched into contest ${data.contestId} — drafting`);
+			status.lastEvent = `${bot.username} matched into contest ${data.contestId}`;
 			await submitLineupForBot(bot, data.contestId);
 			dutyIndex = (dutyIndex + 1) % BOTS.length;
 		} else {
 			console.log(`[${bot.username}] on duty, waiting for a real opponent...`);
+			status.lastEvent = `${bot.username} on duty, waiting`;
 		}
 	} catch (e) {
 		console.error(`[${bot.username}] tick error:`, e.message);
+		status.lastEvent = `tick error: ${e.message}`;
 	}
 }
 
@@ -170,3 +205,21 @@ console.log(`Rotating ${BOTS.length} bots on matchmaking duty against ${BASE_URL
 
 tick();
 setInterval(tick, POLL_MS);
+
+if (PORT) {
+	// Bare-minimum HTTP server — exists only so Render (or similar) treats
+	// this as a web service and keeps a free instance. An external uptime
+	// pinger hitting this URL every ~10 min is what actually keeps it awake;
+	// this endpoint itself does no work beyond reporting status.
+	const http = require('node:http');
+	const server = http.createServer((req, res) => {
+		res.writeHead(200, { 'Content-Type': 'application/json' });
+		res.end(JSON.stringify({ ok: true, bots: BOTS.length, ...status }, null, 2));
+	});
+	server.on('error', (err) => {
+		console.error(`Health-check HTTP server failed to start on port ${PORT}:`, err.message);
+	});
+	server.listen(PORT, () => {
+		console.log(`Health-check HTTP server listening on port ${PORT}`);
+	});
+}
