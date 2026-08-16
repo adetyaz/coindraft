@@ -147,7 +147,8 @@
 		},
 		{
 			concern: 'Theming',
-			approach: 'CSS custom-property tokens, dark by default, explicit light opt-in stored client-side.'
+			approach:
+				'CSS custom-property tokens defined once in layout.css — a single light-only palette, no dark variant.'
 		}
 	];
 
@@ -221,19 +222,19 @@
 			<p class="mt-1 mb-4 text-sm text-text-muted">Wallet-only identity. No email, no password, ever.</p>
 
 			<div class="grid grid-cols-4 gap-3 max-sm:grid-cols-2">
-				<div class="rounded-xl border border-border bg-surface p-4">
+				<div class="rounded-[20px] border border-border bg-surface p-4">
 					<span class="block font-mono text-2xl font-bold text-text">5</span>
 					<span class="text-[11px] font-bold tracking-wide text-text-muted uppercase">Draft slots</span>
 				</div>
-				<div class="rounded-xl border border-border bg-surface p-4">
+				<div class="rounded-[20px] border border-border bg-surface p-4">
 					<span class="block font-mono text-2xl font-bold text-text">3</span>
 					<span class="text-[11px] font-bold tracking-wide text-text-muted uppercase">Waves shipped</span>
 				</div>
-				<div class="rounded-xl border border-border bg-surface p-4">
+				<div class="rounded-[20px] border border-border bg-surface p-4">
 					<span class="block font-mono text-2xl font-bold text-text">3+</span>
 					<span class="text-[11px] font-bold tracking-wide text-text-muted uppercase">Players/lobby</span>
 				</div>
-				<div class="rounded-xl border border-border bg-surface p-4">
+				<div class="rounded-[20px] border border-border bg-surface p-4">
 					<span class="block font-mono text-2xl font-bold text-text">6</span>
 					<span class="text-[11px] font-bold tracking-wide text-text-muted uppercase">Badges</span>
 				</div>
@@ -269,7 +270,7 @@
 				<div class="flex flex-col gap-2.5">
 					{#each wave.features as f (f.name)}
 						<div
-							class="flex items-start justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3.5"
+							class="flex items-start justify-between gap-3 rounded-[20px] border border-border bg-surface px-4 py-3.5"
 						>
 							<div>
 								<h4 class="text-[15px] font-bold text-text">{f.name}</h4>
@@ -298,7 +299,7 @@
 		<section id="architecture" class="scroll-mt-16">
 			<h2 class="text-xl font-black text-text">Architecture notes</h2>
 			<p class="mt-1 mb-4 text-sm text-text-muted">How the "resolves itself" part actually works.</p>
-			<div class="overflow-x-auto rounded-xl border border-border">
+			<div class="overflow-x-auto rounded-[20px] border border-border">
 				<table class="w-full min-w-[480px] border-collapse text-[13.5px]">
 					<thead>
 						<tr class="bg-surface-raised">
@@ -324,7 +325,7 @@
 
 		<section id="stack" class="scroll-mt-16">
 			<h2 class="text-xl font-black text-text">Tech stack</h2>
-			<div class="mt-4 overflow-x-auto rounded-xl border border-border">
+			<div class="mt-4 overflow-x-auto rounded-[20px] border border-border">
 				<table class="w-full min-w-[380px] border-collapse text-[13.5px]">
 					<thead>
 						<tr class="bg-surface-raised">
@@ -352,7 +353,7 @@
 			<h2 class="text-xl font-black text-text">Known limitations</h2>
 			<div class="mt-4 flex flex-col gap-2.5">
 				{#each LIMITATIONS as l (l.name)}
-					<div class="rounded-xl border border-border bg-surface px-4 py-3.5">
+					<div class="rounded-[20px] border border-border bg-surface px-4 py-3.5">
 						<h4 class="text-[15px] font-bold text-text">{l.name}</h4>
 						<p class="mt-1 text-[13.5px] text-text-secondary">{l.desc}</p>
 					</div>

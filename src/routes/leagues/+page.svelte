@@ -94,148 +94,136 @@
 	}
 </script>
 
-<div class="min-h-screen bg-bg">
-	<div class="mx-auto max-w-4xl px-4 py-6">
-		<!-- Header -->
-		<div class="mb-6 flex items-center justify-between">
-			<div>
-				<h1 class="text-xl font-semibold text-text">Leagues</h1>
-				<p class="text-sm text-text-muted">Create or join a league and compete all season</p>
-			</div>
-			<div class="flex gap-2">
-				<button
-					onclick={() => (showJoin = true)}
-					class="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-text-secondary transition-colors hover:bg-surface"
-				>
-					Join
-				</button>
-				<button
-					onclick={() => (showCreate = true)}
-					class="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
-				>
-					Create League
-				</button>
-			</div>
+<div class="mx-auto max-w-[1360px] px-7 pt-7 pb-18">
+	<div class="mb-6.5 flex flex-wrap items-end justify-between gap-6">
+		<div>
+			<h1 class="text-[40px] leading-none font-black tracking-[-0.04em]">Leagues</h1>
+			<p class="mt-2 text-sm text-text-muted">Private ladders with your own crowd</p>
 		</div>
-
-		<!-- Tabs -->
-		<div class="mb-4 flex gap-1 rounded-xl bg-surface p-1 shadow-sm">
+		<div class="flex gap-2.5">
 			<button
-				onclick={() => (tab = 'mine')}
-				class="flex-1 rounded-lg py-2 text-sm font-semibold transition-all {tab === 'mine'
-					? 'bg-primary text-white'
-					: 'text-text-muted hover:text-text'}"
+				onclick={() => (showCreate = true)}
+				class="cursor-pointer rounded-full bg-primary px-[26px] py-3 text-sm font-extrabold text-text transition hover:bg-primary-hover"
 			>
-				My Leagues ({myLeagues.length})
+				Create league
 			</button>
 			<button
-				onclick={() => (tab = 'public')}
-				class="flex-1 rounded-lg py-2 text-sm font-semibold transition-all {tab === 'public'
-					? 'bg-primary text-white'
-					: 'text-text-muted hover:text-text'}"
+				onclick={() => (showJoin = true)}
+				class="cursor-pointer rounded-full border border-border bg-transparent px-[26px] py-3 text-sm font-bold text-text-muted transition hover:bg-hover"
 			>
-				Browse Public
+				Join with code
 			</button>
 		</div>
+	</div>
 
-		<!-- League List -->
-		{#if loading}
-			<div class="flex flex-col gap-3">
-				{#each [0, 1, 2] as i (i)}
-					<div class="h-24 animate-pulse rounded-xl bg-surface shadow-sm"></div>
-				{/each}
+	<div class="mb-4.5 flex w-fit gap-1 rounded-full border border-border bg-surface p-1">
+		<button
+			onclick={() => (tab = 'mine')}
+			class="cursor-pointer rounded-full px-4 py-1.5 text-xs font-bold transition-all {tab === 'mine'
+				? 'bg-primary text-text'
+				: 'text-text-muted'}"
+		>
+			My leagues ({myLeagues.length})
+		</button>
+		<button
+			onclick={() => (tab = 'public')}
+			class="cursor-pointer rounded-full px-4 py-1.5 text-xs font-bold transition-all {tab === 'public'
+				? 'bg-primary text-text'
+				: 'text-text-muted'}"
+		>
+			Browse public
+		</button>
+	</div>
+
+	{#if loading}
+		<div class="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-3.5">
+			{#each [0, 1, 2] as i (i)}
+				<div class="h-40 animate-pulse rounded-[20px] bg-surface-alt"></div>
+			{/each}
+		</div>
+	{:else}
+		{@const list = tab === 'mine' ? myLeagues : publicLeagues}
+		{#if list.length === 0}
+			<div class="rounded-[20px] border border-dashed border-border-strong bg-surface py-16 text-center">
+				<p class="text-sm font-bold text-text-muted">
+					{tab === 'mine' ? "You haven't joined any leagues yet" : 'No public leagues available'}
+				</p>
 			</div>
 		{:else}
-			{@const list = tab === 'mine' ? myLeagues : publicLeagues}
-			{#if list.length === 0}
-				<div class="rounded-xl border border-border bg-surface p-10 text-center shadow-sm">
-					<p class="text-sm text-text-muted">
-						{tab === 'mine'
-							? "You haven't joined any leagues yet."
-							: 'No public leagues available.'}
-					</p>
-				</div>
-			{:else}
-				<div class="flex flex-col gap-3">
-					{#each list as league (league.id)}
-						<button
-							onclick={() => goto(`/leagues/${league.id}`)}
-							class="flex items-center justify-between rounded-xl border border-border bg-surface p-4 text-left shadow-sm transition-all hover:shadow-md"
-						>
-							<div>
-								<h3 class="text-sm font-semibold text-text">{league.name}</h3>
-								<p class="text-[11px] text-text-muted">
-									{league.memberCount} members · Season ends {new Date(
-										league.seasonEnd
-									).toLocaleDateString()}
-								</p>
-							</div>
+			<div class="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-3.5">
+				{#each list as league (league.id)}
+					<button
+						onclick={() => goto(`/leagues/${league.id}`)}
+						class="cursor-pointer rounded-[20px] border border-border bg-surface p-6 text-left transition-transform hover:-translate-y-1"
+					>
+						<div class="mb-4 flex items-center justify-between">
 							<span
-								class="rounded-full bg-primary-muted px-2.5 py-1 text-[10px] font-bold text-primary uppercase"
+								class="rounded-full px-2.5 py-1 text-[10px] font-extrabold tracking-[0.1em] uppercase"
+								style="background:var(--color-primary-muted);color:var(--color-primary-ink)">{league.type}</span
 							>
-								{league.type}
-							</span>
-						</button>
-					{/each}
-				</div>
-			{/if}
+							<span class="font-mono text-xs text-text-muted">{league.memberCount} members</span>
+						</div>
+						<div class="text-xl font-extrabold tracking-[-0.02em]">{league.name}</div>
+						<div class="mt-1.5 text-[13px] text-text-muted">
+							Season ends {new Date(league.seasonEnd).toLocaleDateString()}
+						</div>
+					</button>
+				{/each}
+			</div>
 		{/if}
-	</div>
+	{/if}
 </div>
 
-<!-- Create Modal -->
 {#if showCreate}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-		<div class="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-xl">
-			<h2 class="mb-4 text-lg font-semibold text-text">Create League</h2>
+		<div class="w-full max-w-sm rounded-[24px] bg-surface p-7">
+			<h2 class="mb-4.5 text-xl font-extrabold tracking-[-0.02em]">Create league</h2>
 			<div class="mb-4">
-				<label for="league-name" class="mb-1 block text-xs font-medium text-text-muted"
-					>League Name</label
-				>
+				<label for="league-name" class="mb-1.5 block text-xs font-bold text-text-muted">League name</label>
 				<input
 					id="league-name"
 					type="text"
 					bind:value={newLeagueName}
 					placeholder="e.g. Solana Maxis"
-					class="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-primary"
+					class="w-full rounded-xl border border-border px-3.5 py-2.5 text-sm outline-none focus:border-primary"
 				/>
 			</div>
 			<div class="mb-6">
-				<label for="league-type" class="mb-1 block text-xs font-medium text-text-muted">Type</label>
+				<div class="mb-1.5 text-xs font-bold text-text-muted">Type</div>
 				<div class="flex gap-2">
 					<button
 						onclick={() => (newLeagueType = 'public')}
-						class="flex-1 rounded-lg border py-2 text-sm font-medium transition-all {newLeagueType ===
-						'public'
-							? 'border-primary bg-primary-muted text-primary'
-							: 'border-border text-text-secondary'}"
+						class="flex-1 cursor-pointer rounded-xl border py-2.5 text-sm font-bold transition-all"
+						style={newLeagueType === 'public'
+							? 'border-color:var(--color-primary);background:var(--color-primary-muted);color:var(--color-primary-ink)'
+							: 'border-color:var(--color-border);color:var(--color-text-muted)'}
 					>
 						Public
 					</button>
 					<button
 						onclick={() => (newLeagueType = 'private')}
-						class="flex-1 rounded-lg border py-2 text-sm font-medium transition-all {newLeagueType ===
-						'private'
-							? 'border-primary bg-primary-muted text-primary'
-							: 'border-border text-text-secondary'}"
+						class="flex-1 cursor-pointer rounded-xl border py-2.5 text-sm font-bold transition-all"
+						style={newLeagueType === 'private'
+							? 'border-color:var(--color-primary);background:var(--color-primary-muted);color:var(--color-primary-ink)'
+							: 'border-color:var(--color-border);color:var(--color-text-muted)'}
 					>
 						Private
 					</button>
 				</div>
 			</div>
-			<div class="flex gap-2">
+			<div class="flex gap-2.5">
 				<button
 					onclick={() => (showCreate = false)}
-					class="flex-1 rounded-xl border border-border py-2.5 text-sm font-semibold text-text-secondary hover:bg-hover"
+					class="flex-1 cursor-pointer rounded-full border border-border py-3 text-sm font-bold text-text-muted hover:bg-hover"
 				>
 					Cancel
 				</button>
 				<button
 					onclick={createLeague}
 					disabled={!newLeagueName.trim()}
-					class="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-all {newLeagueName.trim()
-						? 'bg-primary hover:bg-primary-hover'
-						: 'cursor-not-allowed bg-hover'}"
+					class="flex-1 cursor-pointer rounded-full py-3 text-sm font-extrabold transition-all {newLeagueName.trim()
+						? 'bg-primary text-text hover:bg-primary-hover'
+						: 'cursor-not-allowed bg-surface-alt text-text-muted'}"
 				>
 					Create
 				</button>
@@ -244,36 +232,33 @@
 	</div>
 {/if}
 
-<!-- Join Modal -->
 {#if showJoin}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-		<div class="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-xl">
-			<h2 class="mb-4 text-lg font-semibold text-text">Join League</h2>
+		<div class="w-full max-w-sm rounded-[24px] bg-surface p-7">
+			<h2 class="mb-4.5 text-xl font-extrabold tracking-[-0.02em]">Join league</h2>
 			<div class="mb-6">
-				<label for="invite-code" class="mb-1 block text-xs font-medium text-text-muted"
-					>Invite Code</label
-				>
+				<label for="invite-code" class="mb-1.5 block text-xs font-bold text-text-muted">Invite code</label>
 				<input
 					id="invite-code"
 					type="text"
 					bind:value={inviteCode}
 					placeholder="Enter 6-character code"
-					class="w-full rounded-lg border border-border px-3 py-2 text-sm uppercase outline-none focus:border-primary"
+					class="w-full rounded-xl border border-border px-3.5 py-2.5 text-sm uppercase outline-none focus:border-primary"
 				/>
 			</div>
-			<div class="flex gap-2">
+			<div class="flex gap-2.5">
 				<button
 					onclick={() => (showJoin = false)}
-					class="flex-1 rounded-xl border border-border py-2.5 text-sm font-semibold text-text-secondary hover:bg-hover"
+					class="flex-1 cursor-pointer rounded-full border border-border py-3 text-sm font-bold text-text-muted hover:bg-hover"
 				>
 					Cancel
 				</button>
 				<button
 					onclick={joinLeague}
 					disabled={!inviteCode.trim()}
-					class="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-all {inviteCode.trim()
-						? 'bg-primary hover:bg-primary-hover'
-						: 'cursor-not-allowed bg-hover'}"
+					class="flex-1 cursor-pointer rounded-full py-3 text-sm font-extrabold transition-all {inviteCode.trim()
+						? 'bg-primary text-text hover:bg-primary-hover'
+						: 'cursor-not-allowed bg-surface-alt text-text-muted'}"
 				>
 					Join
 				</button>

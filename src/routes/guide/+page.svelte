@@ -109,8 +109,8 @@
 			a: 'The contest stays open until both sides submit a lineup — nothing resolves against half a matchup.'
 		},
 		{
-			q: 'Can I switch between light and dark mode?',
-			a: 'Yes — the sun/moon toggle in the nav bar. Dark is the default; your choice is remembered for next time.'
+			q: 'Is there a dark mode?',
+			a: 'Not currently — CoinDraft ships with a single light theme.'
 		},
 		{
 			q: 'Does Practice Mode XP count toward my rank?',
@@ -125,7 +125,7 @@
 </script>
 
 <div class="mx-auto flex max-w-2xl flex-col gap-3">
-	<section class="rounded-xl border border-border bg-surface px-5 py-6">
+	<section class="rounded-[20px] border border-border bg-surface px-5 py-6">
 		<span class="inline-flex items-center gap-2 text-[11px] font-bold tracking-widest text-primary uppercase">
 			<span class="h-1.5 w-1.5 rounded-full bg-primary"></span>Guide
 		</span>
@@ -137,19 +137,19 @@
 		<div class="mt-5 flex flex-wrap gap-2">
 			<a
 				href="/dashboard"
-				class="inline-flex h-10 items-center rounded-lg bg-primary px-5 text-sm font-bold text-white no-underline transition hover:bg-primary-hover"
+				class="inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-bold text-text no-underline transition hover:bg-primary-hover"
 				>Open the app →</a
 			>
 			<a
 				href="/docs"
-				class="inline-flex h-10 items-center rounded-lg border border-border px-5 text-sm font-medium text-text-secondary no-underline transition hover:bg-hover"
+				class="inline-flex h-10 items-center rounded-full border border-border px-5 text-sm font-medium text-text-secondary no-underline transition hover:bg-hover"
 				>Full documentation</a
 			>
 		</div>
 	</section>
 
 	{#each STEPS as group (group.group)}
-		<section class="rounded-xl border border-border bg-surface px-5 py-5">
+		<section class="rounded-[20px] border border-border bg-surface px-5 py-5">
 			<div class="mb-1">
 				<span class="text-[11px] font-bold tracking-widest text-primary uppercase">{group.group}</span>
 				<p class="mt-1 text-xs text-text-muted">{group.groupSub}</p>
@@ -198,7 +198,7 @@
 		</section>
 	{/each}
 
-	<section class="rounded-xl border border-border bg-surface px-5 py-5">
+	<section class="rounded-[20px] border border-border bg-surface px-5 py-5">
 		<span class="text-[11px] font-bold tracking-widest text-primary uppercase">Reference</span>
 		<h2 class="mt-1 mb-2 text-lg font-black text-text">Common questions</h2>
 		<div class="flex flex-col divide-y divide-border">

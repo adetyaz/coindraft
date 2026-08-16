@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { SECTORS } from '$lib/constants';
+	import { sectorTheme } from '$lib/sectorTheme';
 	import Toast from '$lib/components/Toast.svelte';
 	import { toast } from '$lib/toast';
 
@@ -40,24 +41,6 @@
 	let highlightId = $state('');
 	let contestType = $state<'daily' | 'weekly'>('daily');
 	let isPaper = $state(false);
-
-	// ── Sector visual config ───────────────────────────────────────────
-	// bg/dimBg are computed tints of the sector color so they adapt to
-	// dark/light theme automatically instead of hardcoding per-theme values.
-	function sectorStyle(varName: string) {
-		return {
-			color: `var(--color-sector-${varName})`,
-			bg: `color-mix(in oklab, var(--color-sector-${varName}) 18%, transparent)`,
-			dimBg: `color-mix(in oklab, var(--color-sector-${varName}) 8%, transparent)`
-		};
-	}
-	const SECTOR_STYLE: Record<string, { color: string; bg: string; dimBg: string }> = {
-		l1: sectorStyle('l1'),
-		l2: sectorStyle('l2'),
-		defi: sectorStyle('defi'),
-		meme: sectorStyle('meme'),
-		wildcard: sectorStyle('wildcard')
-	};
 
 	// ── Lifecycle ──────────────────────────────────────────────────────
 	onMount(() => {
@@ -136,6 +119,20 @@
 		return `${m}:${s}`;
 	});
 
+	// Real, derived from the actual lineup + live 24h changes + active boosts —
+	// not a fabricated number. Matches the scoring formula on the Guide page:
+	// score = Σ(move% × boost) × 100.
+	const projectedScore = $derived(
+		Math.round(
+			lineup.reduce((sum, p) => {
+				const t = tokenMap.get(p.currencyId);
+				const chg = t?.change24h ?? 0;
+				const boosted = activeBoosts.get(p.sector) ? chg * 1.25 : chg;
+				return sum + boosted;
+			}, 0) * 100
+		)
+	);
+
 	// ── Helpers ────────────────────────────────────────────────────────
 	function pickForSector(id: string): Pick | undefined {
 		return lineup.find((p) => p.sector === id);
@@ -195,20 +192,6 @@
 		return '$' + v.toPrecision(4);
 	}
 
-	function avatarBg(sym: string): string {
-		const palette = [
-			'var(--color-primary)',
-			'var(--color-sector-l1)',
-			'var(--color-sector-l2)',
-			'var(--color-sector-defi)',
-			'var(--color-sector-meme)',
-			'var(--color-sector-wildcard)'
-		];
-		let h = 0;
-		for (const c of sym) h = (h * 31 + c.charCodeAt(0)) & 0xffffff;
-		return palette[Math.abs(h) % palette.length];
-	}
-
 	// ── Submit ─────────────────────────────────────────────────────────
 	async function submitLineup() {
 		if (lineup.length !== 5) {
@@ -257,657 +240,290 @@
 			submitting = false;
 		}
 	}
+
+	const TILTS = ['-1.6deg', '1.2deg', '-0.8deg', '1.6deg', '-1.2deg'];
 </script>
 
-<div class="min-h-screen bg-bg">
-	<div class="mx-auto flex max-w-4xl flex-col gap-5 px-4 py-6">
-		<!-- ── Header ──────────────────────────────────────────────── -->
-		<header
-			class="flex items-center justify-between rounded-xl border border-border bg-surface px-5 py-4 shadow-sm"
-		>
-			<div>
-				<div class="flex items-center gap-2">
-					<h1 class="text-lg leading-tight font-semibold text-text">
-						Draft — {lobbyId
-							? 'Multiplayer Lobby'
-							: contestType === 'weekly'
-								? 'Weekly Contest'
-								: 'Daily Contest'}
-					</h1>
-					{#if lobbyId}
-						<span
-							class="rounded-full bg-sector-defi/15 px-2 py-0.5 text-[10px] font-bold text-sector-defi uppercase"
-							>Ranked lobby</span
-						>
-					{:else if contestType === 'weekly'}
-						<span
-							class="rounded-full bg-warning/15 px-2 py-0.5 text-[10px] font-bold text-warning uppercase"
-							>7-day · 2x XP</span
-						>
-					{/if}
-					{#if isPaper}
-						<span
-							class="rounded-full bg-positive/15 px-2 py-0.5 text-[10px] font-bold text-positive uppercase"
-							>Practice mode</span
-						>
-					{/if}
-				</div>
-				<p class="mt-0.5 text-[11px] font-medium tracking-wider text-text-muted uppercase">
-					Strategic Selection Phase
-				</p>
-			</div>
-			<div class="flex items-center gap-1.5 rounded-full bg-warning/15 px-3 py-1.5 text-warning">
-				<svg
-					class="h-3.5 w-3.5"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-					stroke-width="2"
-				>
-					<circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-				</svg>
-				<span class="text-sm font-bold tabular-nums">{timerStr}</span>
-			</div>
-		</header>
-
-		<!-- ── VS Bar ──────────────────────────────────────────────── -->
-		<div
-			class="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface px-5 py-4 shadow-sm"
-		>
-			<div class="flex flex-1 items-center gap-3">
-				<div class="relative">
-					<div
-						class="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white"
-					>
-						YOU
-					</div>
-					<div
-						class="absolute -right-0.5 -bottom-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-surface bg-positive"
-					>
-						<svg class="h-2 w-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-							<path
-								fill-rule="evenodd"
-								d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-								clip-rule="evenodd"
-							/>
-						</svg>
-					</div>
-				</div>
-				<div>
-					<p class="text-sm font-semibold text-text">You</p>
-					<p class="text-[11px] text-text-muted">Rank #42 · 64% Win Rate</p>
-				</div>
-			</div>
-			<span class="text-xs font-bold tracking-widest text-text-muted uppercase opacity-40">vs</span>
-			<div class="flex flex-1 items-center justify-end gap-3 text-right">
-				<div>
-					<p class="text-sm font-semibold text-text">CryptoWhale_88</p>
-					<p class="text-[11px] text-text-muted">Rank #12 · 71% Win Rate</p>
-				</div>
-				<div
-					class="flex h-11 w-11 items-center justify-center rounded-full bg-text-secondary text-xs font-semibold text-white"
-				>
-					CW
-				</div>
-			</div>
-		</div>
-
-		{#if loading}
-			<div class="flex flex-col gap-3">
-				<div class="grid grid-cols-2 gap-3 max-sm:grid-cols-1">
-					{#each [0, 1, 2, 3] as i (i)}
-						<div class="h-32 animate-pulse rounded-xl bg-surface shadow-sm"></div>
-					{/each}
-				</div>
-				<div class="h-24 animate-pulse rounded-xl bg-surface shadow-sm"></div>
-				<div class="h-105 animate-pulse rounded-xl bg-surface shadow-sm"></div>
-			</div>
-		{:else if loadError}
+<div class="mx-auto max-w-[1360px] px-7 pt-7 pb-18">
+	<!-- ── Header ──────────────────────────────────────────────────── -->
+	<div class="mb-6 flex flex-wrap items-end justify-between gap-6">
+		<div>
 			<div
-				class="flex items-center gap-3 rounded-xl border border-negative/20 bg-negative/10 px-4 py-3 text-sm text-negative"
+				class="mb-2.5 font-mono text-[11px] font-bold tracking-[0.14em] uppercase"
+				style="color:{lobbyId ? 'var(--color-coral-ink)' : 'var(--color-text-muted)'}"
 			>
-				<svg
-					class="h-4 w-4 shrink-0"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-					stroke-width="2"
-				>
-					<circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line
-						x1="12"
-						y1="16"
-						x2="12.01"
-						y2="16"
-					/>
-				</svg>
-				<span>{loadError}</span>
-				<button onclick={loadData} class="ml-auto underline">Retry</button>
+				{lobbyId
+					? 'Ranked Lobby'
+					: contestType === 'weekly'
+						? 'Weekly Contest · 7D · 2× XP'
+						: 'Head-to-head'}
+				{#if isPaper}&middot; Practice mode{/if}
 			</div>
-		{:else}
-			<!-- ── Lineup Slots ──────────────────────────────────── -->
-			<section>
-				<div class="mb-3 flex items-center justify-between px-0.5">
-					<h2 class="text-sm font-semibold text-text">Your Lineup</h2>
-					<span class="text-[11px] font-medium tracking-wider text-text-muted uppercase">
-						{slotsFilledCount} / 5 Slots Filled
-					</span>
-				</div>
+			<h1 class="text-[40px] leading-none font-black tracking-[-0.04em] sm:text-[46px]">
+				Build your lineup
+			</h1>
+			<p class="mt-2 text-sm text-text-muted">
+				{lobbyId
+					? 'One token per sector · you place against the whole room, not one opponent'
+					: `One token per sector · scoring runs ${contestType === 'weekly' ? '7 days' : '24h'} from lock`}
+			</p>
+		</div>
+		<div class="flex items-center gap-2.5 rounded-full border border-border bg-surface px-[18px] py-2.5">
+			<span class="anim-blink h-[7px] w-[7px] rounded-full bg-primary"></span>
+			<span class="font-mono text-sm font-bold">{timerStr} to lock</span>
+		</div>
+	</div>
 
-				<!-- 2×2 grid for first 4 sectors -->
-				<div class="mb-3 grid grid-cols-2 gap-3 max-sm:grid-cols-1">
-					{#each SECTORS.slice(0, 4) as sector (sector.id)}
-						{@const pick = pickForSector(sector.id)}
-						{@const style = SECTOR_STYLE[sector.id]}
-						{@const isActive = activeSector === sector.id && !pick}
-						{@const sectorChg = sectorChanges.get(sector.id) ?? null}
+	{#if loading}
+		<div class="flex flex-col gap-3.5">
+			<div class="grid grid-cols-5 gap-3.5 max-lg:grid-cols-2 max-sm:grid-cols-1">
+				{#each [0, 1, 2, 3, 4] as i (i)}
+					<div class="h-40 animate-pulse rounded-[20px] bg-surface-alt"></div>
+				{/each}
+			</div>
+			<div class="h-96 animate-pulse rounded-[20px] bg-surface-alt"></div>
+		</div>
+	{:else if loadError}
+		<div
+			class="flex items-center gap-3 rounded-2xl border border-negative/30 bg-negative/10 px-4 py-3 text-sm text-negative-ink"
+		>
+			<span>{loadError}</span>
+			<button onclick={loadData} class="ml-auto cursor-pointer font-bold underline">Retry</button>
+		</div>
+	{:else}
+		<!-- ── Sector slots ────────────────────────────────────────── -->
+		<div class="mb-9 grid grid-cols-5 gap-3.5 pt-1.5 max-lg:grid-cols-2 max-sm:grid-cols-1">
+			{#each SECTORS as sector, i (sector.id)}
+				{@const pick = pickForSector(sector.id)}
+				{@const theme = sectorTheme(sector.id)}
+				{@const isActive = activeSector === sector.id && !pick}
+				{@const sectorChg = sectorChanges.get(sector.id) ?? null}
+				{@const hasBoost = pick ? activeBoosts.get(sector.id) : false}
+
+				<button
+					type="button"
+					onclick={() => selectSector(sector.id)}
+					class="group relative overflow-hidden rounded-[20px] text-left transition-transform duration-200"
+					style="transform:rotate({TILTS[i]});background:var(--color-surface);border:2px {pick
+						? 'solid ' + theme.color
+						: 'dashed var(--color-border-strong)'};{pick
+						? `box-shadow:0 12px 34px ${theme.color}22`
+						: ''}"
+				>
+					<div class="h-1.5" style="background:{pick ? theme.color : 'var(--color-border)'}"></div>
+					<div class="flex flex-col items-center gap-3 px-4 pt-4.5 pb-5 text-center">
+						<span
+							class="rounded-full px-2.5 py-1 text-[10px] font-extrabold tracking-[0.1em] uppercase"
+							style="background:{pick
+								? theme.color + '24'
+								: 'var(--color-surface-alt)'};color:{pick ? theme.ink : 'var(--color-text-muted)'}"
+						>
+							{sector.name} sector
+						</span>
 
 						{#if pick}
 							{@const tkn = tokenMap.get(pick.currencyId)}
-							{@const hasBoost = activeBoosts.get(sector.id)}
 							<div
-								class="flex h-32 cursor-default flex-col rounded-xl border bg-surface p-4 shadow-sm"
-								style="border-color: {hasBoost ? style.color : style.color + '30'}"
+								class="grid h-[54px] w-[54px] place-items-center rounded-full text-[22px] font-black text-text"
+								style="background:{theme.color};box-shadow:0 0 26px {theme.color}66"
 							>
-								<div class="flex items-start justify-between">
-									<span
-										class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
-										style="background: {style.bg}; color: {style.color}"
-									>
-										{sector.name} Sector
-									</span>
-									<div class="flex items-center gap-1">
-										<svg
-											class="h-4 w-4"
-											style="color: {style.color}"
-											fill="currentColor"
-											viewBox="0 0 20 20"
-										>
-											{#if hasBoost}
-												<span
-													class="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white uppercase"
-													>⚡ Boost</span
-												>
-											{/if}
-											<path
-												fill-rule="evenodd"
-												d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-												clip-rule="evenodd"
-											/>
-										</svg>
-										<button
-											type="button"
-											onclick={() => removePick(sector.id)}
-											class="flex h-5 w-5 cursor-pointer items-center justify-center rounded-full text-xl leading-none text-text-muted hover:bg-hover"
-											title="Remove pick">×</button
-										>
-									</div>
-								</div>
-								<div class="mt-auto flex items-center gap-3">
-									<div
-										class="flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold text-white"
-										style="background: {avatarBg(pick.symbol)}"
-									>
-										{pick.symbol.charAt(0).toUpperCase()}
-									</div>
-									<div>
-										<p class="text-sm font-semibold text-text">{pick.symbol.toUpperCase()}</p>
-										{#if tkn?.change24h != null}
-											<p
-												class="text-xs font-medium"
-												style="color: {tkn.change24h >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'}"
-											>
-												{fmtChg(tkn.change24h)}
-											</p>
-										{:else}
-											<p class="text-[11px] text-text-muted">{pick.name}</p>
-										{/if}
-									</div>
-									{#if tkn?.price != null}
-										<span class="ml-auto text-xs font-medium text-text-muted"
-											>{fmtPrice(tkn.price)}</span
-										>
-									{/if}
-								</div>
+								{pick.symbol.charAt(0).toUpperCase()}
 							</div>
-						{:else if isActive}
-							<button
-								type="button"
-								onclick={() => selectSector(sector.id)}
-								class="flex h-32 cursor-pointer flex-col rounded-xl border-2 border-dashed p-4 transition-all"
-								style="border-color: {style.color}; background: {style.dimBg}"
+							<div class="text-[17px] font-black tracking-[-0.02em]">{pick.symbol.toUpperCase()}</div>
+							<div class="font-mono text-[11px] text-text-muted">
+								{tkn?.change24h != null ? fmtChg(tkn.change24h) : (pick.name ?? '')}
+							</div>
+							{#if hasBoost}
+								<span class="rounded-full bg-primary px-2 py-0.5 text-[9px] font-extrabold text-text uppercase"
+									>⚡ boost</span
+								>
+							{/if}
+							<span
+								role="button"
+								tabindex="0"
+								onclick={(e) => {
+									e.stopPropagation();
+									removePick(sector.id);
+								}}
+								onkeydown={(e) => {
+									if (e.key === 'Enter') {
+										e.stopPropagation();
+										removePick(sector.id);
+									}
+								}}
+								class="absolute top-2.5 right-2.5 grid h-5 w-5 cursor-pointer place-items-center rounded-full text-base leading-none text-text-muted hover:bg-hover"
+								>×</span
 							>
-								<div class="flex items-start justify-between">
-									<span
-										class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
-										style="background: {style.bg}; color: {style.color}"
-									>
-										{sector.name} Sector
-									</span>
-									{#if sectorChg != null}
-										<span
-											class="text-[11px] font-medium"
-											style="color: {sectorChg >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'}"
-											>{fmtChg(sectorChg)}</span
-										>
-									{/if}
-								</div>
-								<div class="mt-auto flex flex-col items-center gap-1">
-									<svg
-										class="h-5 w-5"
-										style="color: {style.color}"
-										fill="none"
-										viewBox="0 0 24 24"
-										stroke="currentColor"
-										stroke-width="2"
-									>
-										<circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line
-											x1="8"
-											y1="12"
-											x2="16"
-											y2="12"
-										/>
-									</svg>
-									<span class="text-xs font-semibold" style="color: {style.color}"
-										>Draft {sector.name} Token ↓</span
-									>
-								</div>
-							</button>
 						{:else}
-							<button
-								type="button"
-								onclick={() => selectSector(sector.id)}
-								class="flex h-32 cursor-pointer flex-col rounded-xl border border-dashed border-border bg-surface p-4 shadow-sm transition-all hover:border-text-muted hover:bg-hover"
+							<div
+								class="grid h-[54px] w-[54px] place-items-center rounded-full text-[26px] font-black"
+								style={isActive
+									? `border:2px dashed ${theme.color};color:${theme.color}`
+									: 'border:2px dashed var(--color-border-strong);color:var(--color-text-muted)'}
 							>
-								<div class="flex items-start justify-between">
-									<span
-										class="rounded-full bg-hover px-2 py-0.5 text-[10px] font-bold text-text-muted uppercase"
-									>
-										{sector.name} Sector
-									</span>
-									{#if sectorChg != null}
-										<span
-											class="text-[11px] font-medium"
-											style="color: {sectorChg >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'}"
-											>{fmtChg(sectorChg)}</span
-										>
-									{/if}
-								</div>
-								<div class="mt-auto flex flex-col items-center gap-1 text-text-muted">
-									<svg
-										class="h-5 w-5"
-										fill="none"
-										viewBox="0 0 24 24"
-										stroke="currentColor"
-										stroke-width="1.5"
-									>
-										<circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line
-											x1="8"
-											y1="12"
-											x2="16"
-											y2="12"
-										/>
-									</svg>
-									<span class="text-xs font-medium">Draft Token</span>
-								</div>
-							</button>
+								+
+							</div>
+							<div class="text-[15px] font-extrabold tracking-[-0.02em] text-text-muted">Empty</div>
+							<div class="font-mono text-[11px]" style={sectorChg != null ? `color:${sectorChg >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'}` : 'color:var(--color-text-muted)'}>
+								{sectorChg != null ? fmtChg(sectorChg) : `${sector.id === 'wildcard' ? 'any token' : 'draft a token'}`}
+							</div>
 						{/if}
+					</div>
+					<div
+						class="absolute top-3.5 -right-6 w-24 rotate-[38deg] py-0.5 text-center font-mono text-[9px] font-bold tracking-[0.14em] uppercase"
+						style="background:{pick ? theme.color : 'var(--color-surface-alt)'};color:{pick
+							? 'var(--color-ink)'
+							: 'var(--color-text-muted)'}"
+					>
+						{pick ? 'Picked' : 'Open'}
+					</div>
+				</button>
+			{/each}
+		</div>
+
+		<!-- ── Pool + sidebar ──────────────────────────────────────── -->
+		<div class="flex flex-wrap gap-4.5">
+			<div class="min-w-0 flex-[1_1_520px]">
+				<div class="mb-3.5 flex flex-wrap items-center gap-2.5">
+					<div class="relative min-w-[180px] flex-1">
+						<input
+							type="text"
+							placeholder="Search tokens…"
+							bind:value={search}
+							class="h-[42px] w-full rounded-full border border-border bg-surface px-[18px] text-[13px] text-text outline-none transition focus:border-primary"
+						/>
+					</div>
+					{#each SECTORS as sector (sector.id)}
+						{@const theme = sectorTheme(sector.id)}
+						{@const isActive = activeSector === sector.id}
+						{@const filled = !!pickForSector(sector.id)}
+						<button
+							type="button"
+							onclick={() => (activeSector = sector.id)}
+							class="relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold whitespace-nowrap transition-all"
+							style={isActive
+								? `background:${theme.color};color:var(--color-ink)`
+								: 'background:var(--color-surface-alt);color:var(--color-text-muted)'}
+						>
+							{sector.name}
+							{#if filled}
+								<span
+									class="grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold"
+									style="background:{isActive ? 'rgba(26,36,33,0.25)' : theme.color};color:{isActive
+										? 'var(--color-ink)'
+										: 'var(--color-ink)'}">✓</span
+								>
+							{/if}
+						</button>
 					{/each}
 				</div>
 
-				<!-- Wildcard — full width -->
-				{#each SECTORS.slice(4) as sector (sector.id)}
-					{@const pick = pickForSector(sector.id)}
-					{@const style = SECTOR_STYLE[sector.id]}
-					{@const isActive = activeSector === sector.id && !pick}
-					{@const sectorChg = sectorChanges.get(sector.id) ?? null}
-
-					{#if pick}
-						{@const tkn = tokenMap.get(pick.currencyId)}
-						{@const hasBoost = activeBoosts.get(sector.id)}
-						<div
-							class="flex cursor-default items-center gap-4 rounded-xl border bg-surface p-4 shadow-sm"
-							style="border-color: {hasBoost ? style.color : style.color + '30'}"
-						>
-							<div class="flex flex-1 flex-col gap-2">
-								<div class="flex items-center gap-2">
-									<span
-										class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
-										style="background: {style.bg}; color: {style.color}">Wildcard Sector</span
-									>
-									<span class="text-[11px] text-text-muted">· Any Token Allowed</span>
-								</div>
-								<div class="flex items-center gap-3">
-									<div
-										class="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white"
-										style="background: {avatarBg(pick.symbol)}"
-									>
-										{pick.symbol.charAt(0).toUpperCase()}
-									</div>
-									<div>
-										<p class="text-sm font-semibold text-text">{pick.symbol.toUpperCase()}</p>
-										{#if tkn?.change24h != null}
-											<p
-												class="text-xs font-medium"
-												style="color: {tkn.change24h >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'}"
-											>
-												{fmtChg(tkn.change24h)}
-											</p>
-										{:else}
-											<p class="text-[11px] text-text-muted">{pick.name}</p>
-										{/if}
-									</div>
-									{#if tkn?.price != null}
-										<span class="ml-auto text-xs font-medium text-text-muted"
-											>{fmtPrice(tkn.price)}</span
-										>
-									{/if}
-								</div>
-							</div>
-							<div class="flex items-center gap-2">
-								<svg
-									class="h-5 w-5"
-									style="color: {style.color}"
-									fill="currentColor"
-									viewBox="0 0 20 20"
-								>
-									<path
-										fill-rule="evenodd"
-										d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-										clip-rule="evenodd"
-									/>
-								</svg>
-								<button
-									type="button"
-									onclick={() => removePick(sector.id)}
-									class="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-xl leading-none text-text-muted hover:bg-hover"
-									title="Remove">×</button
-								>
-							</div>
-						</div>
-					{:else if isActive}
-						<button
-							type="button"
-							onclick={() => selectSector(sector.id)}
-							class="flex w-full cursor-pointer items-center justify-between rounded-xl border-2 border-dashed p-4 transition-all"
-							style="border-color: {style.color}; background: {style.dimBg}"
-						>
-							<div class="flex flex-col gap-1 text-left">
-								<div class="flex flex-wrap items-center gap-2">
-									<span
-										class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
-										style="background: {style.bg}; color: {style.color}">Wildcard Sector</span
-									>
-									<span class="text-[11px]" style="color: {style.color}">· Any Token Allowed</span>
-									{#if sectorChg != null}
-										<span
-											class="text-[11px] font-medium"
-											style="color: {sectorChg >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'}"
-											>{fmtChg(sectorChg)}</span
-										>
-									{/if}
-								</div>
-								<span class="text-xs font-semibold" style="color: {style.color}"
-									>Draft your Wildcard pick ↓</span
-								>
-							</div>
-							<svg
-								class="h-6 w-6 shrink-0"
-								style="color: {style.color}"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-								stroke-width="2"
-							>
-								<circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line
-									x1="8"
-									y1="12"
-									x2="16"
-									y2="12"
-								/>
-							</svg>
-						</button>
-					{:else}
-						<button
-							type="button"
-							onclick={() => selectSector(sector.id)}
-							class="flex w-full cursor-pointer items-center justify-between rounded-xl border border-dashed border-border bg-surface p-4 shadow-sm transition-all hover:border-text-muted"
-						>
-							<div class="flex flex-col gap-1 text-left">
-								<div class="flex flex-wrap items-center gap-2">
-									<span
-										class="rounded-full bg-hover px-2 py-0.5 text-[10px] font-bold text-text-muted uppercase"
-										>Wildcard Sector</span
-									>
-									<span class="text-[11px] text-text-muted">· Any Token Allowed</span>
-									{#if sectorChg != null}
-										<span
-											class="text-[11px] font-medium"
-											style="color: {sectorChg >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'}"
-											>{fmtChg(sectorChg)}</span
-										>
-									{/if}
-								</div>
-								<span class="text-xs font-medium text-text-muted">Draft your Wildcard pick</span>
-							</div>
-							<svg
-								class="h-5 w-5 shrink-0 text-text-muted"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-								stroke-width="1.5"
-							>
-								<circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line
-									x1="8"
-									y1="12"
-									x2="16"
-									y2="12"
-								/>
-							</svg>
-						</button>
-					{/if}
-				{/each}
-			</section>
-
-			<!-- ── Token Pool ──────────────────────────────────────── -->
-			<section
-				id="token-pool"
-				class="overflow-hidden rounded-xl border border-border bg-surface shadow-sm"
-			>
-				<!-- Pool header -->
-				<div class="flex flex-col gap-3 border-b border-border p-4">
-					<div class="flex items-center justify-between">
-						<h2 class="text-sm font-semibold text-text">Token Pool</h2>
-						<div class="flex items-center gap-1.5 text-text-muted">
-							<svg
-								class="h-3 w-3"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-								stroke-width="2"
-							>
-								<polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 101.5-8.79" />
-							</svg>
-							<span class="text-[11px] font-medium">Live prices · 2 min cache</span>
-						</div>
-					</div>
-
-					<!-- Sector selector pills -->
-					<div
-						class="flex gap-2 overflow-x-auto pb-0.5"
-						style="-ms-overflow-style:none;scrollbar-width:none"
-					>
-						{#each SECTORS as sector (sector.id)}
-							{@const style = SECTOR_STYLE[sector.id]}
-							{@const isActive = activeSector === sector.id}
-							{@const filled = !!pickForSector(sector.id)}
-							<button
-								type="button"
-								onclick={() => (activeSector = sector.id)}
-								class="relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all"
-								style={isActive
-									? `background: ${style.color}; color: white`
-									: `background: var(--color-hover); color: var(--color-text-secondary)`}
-							>
-								{sector.name}
-								{#if filled}
-									<span
-										class="flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white"
-										style="background: {isActive ? 'rgba(255,255,255,0.3)' : style.color}">✓</span
-									>
-								{/if}
-							</button>
-						{/each}
-					</div>
-
-					<!-- Active sector label + search -->
-					<div class="flex items-center gap-3">
-						<div
-							class="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium"
-							style="background: {SECTOR_STYLE[activeSector].bg}; color: {SECTOR_STYLE[activeSector]
-								.color}"
-						>
-							<span>Drafting for:</span>
-							<strong
-								>{SECTORS.find((s) => s.id === activeSector)?.name ?? activeSector.toUpperCase()} Slot</strong
-							>
-						</div>
-						<div class="relative flex-1">
-							<svg
-								class="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-								stroke-width="2"
-							>
-								<circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-							</svg>
-							<input
-								type="text"
-								placeholder="Search symbol or name…"
-								bind:value={search}
-								class="h-8 w-full rounded-lg border border-border bg-surface-raised py-1.5 pr-3 pl-8 text-xs transition-colors outline-none focus:border-primary focus:bg-surface"
-							/>
-						</div>
-					</div>
-				</div>
-
-				<!-- Table header -->
-				<div class="grid grid-cols-12 border-b border-border bg-surface-raised px-4 py-2">
-					<div class="col-span-6 text-[10px] font-bold tracking-wider text-text-muted uppercase">
-						Token
-					</div>
-					<div
-						class="col-span-3 text-right text-[10px] font-bold tracking-wider text-text-muted uppercase"
-					>
-						24h
-					</div>
-					<div
-						class="col-span-3 text-right text-[10px] font-bold tracking-wider text-text-muted uppercase max-sm:hidden"
-					>
-						Volume
-					</div>
-				</div>
-
-				<!-- Token rows -->
-				<div class="max-h-105 divide-y divide-black/5 overflow-y-auto">
+				<div id="token-pool" class="grid grid-cols-2 gap-3.5 max-[560px]:grid-cols-1">
 					{#if filteredTokens.length === 0}
-						<div class="px-4 py-10 text-center text-sm text-text-muted">
+						<div class="col-span-full py-10 text-center text-sm text-text-muted">
 							No tokens match "{search}"
 						</div>
 					{/if}
 					{#each filteredTokens as token (token.currency_id)}
 						{@const inLineup = isInLineup(token.currency_id)}
 						{@const isHighlighted = token.currency_id === highlightId}
-						<button
-							type="button"
-							disabled={inLineup}
-							onclick={() => addToken(token)}
-							class="grid w-full cursor-pointer grid-cols-12 items-center px-4 py-3 text-left transition-colors
-								{inLineup ? 'cursor-default bg-hover opacity-60' : 'bg-surface hover:bg-primary-muted'}
-								{isHighlighted ? 'ring-2 ring-inset ring-primary' : ''}"
+						{@const activeTheme = sectorTheme(activeSector)}
+						<div
+							class="rounded-[20px] p-4.5 transition-transform duration-200 hover:-translate-y-1.5"
+							style="background:{inLineup
+								? 'var(--color-primary-muted)'
+								: 'var(--color-surface)'};border:2px solid {inLineup
+								? 'var(--color-primary)'
+								: 'var(--color-border)'};{isHighlighted ? 'outline:2px solid var(--color-primary)' : ''}"
 						>
-							<div class="col-span-6 flex items-center gap-3">
+							<div class="mb-4 flex items-start justify-between gap-2.5">
 								<div
-									class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-									style="background: {avatarBg(token.symbol ?? '')}"
+									class="grid h-[46px] w-[46px] place-items-center rounded-full text-[19px] font-black text-text"
+									style="background:{activeTheme.color};box-shadow:0 0 24px {activeTheme.color}55"
 								>
 									{(token.symbol ?? '?').charAt(0).toUpperCase()}
 								</div>
-								<div class="min-w-0 flex-1">
-									<div class="flex items-center gap-1.5">
-										<p class="text-sm font-semibold text-text">
-											{(token.symbol ?? '').toUpperCase()}
-										</p>
-										{#if token.rank}
-											<span
-												class="rounded bg-hover px-1 py-0.5 text-[9px] font-medium text-text-muted"
-												>#{token.rank}</span
-											>
-										{/if}
-										{#if inLineup}
-											<span
-												class="ml-1 rounded-full bg-primary-muted px-2 py-0.5 text-[10px] font-semibold text-primary"
-												>In lineup</span
-											>
-										{/if}
-									</div>
-									<p class="truncate text-[11px] text-text-muted">{token.name}</p>
-								</div>
+								{#if token.rank}
+									<span class="rounded-full bg-surface-alt px-2 py-1 text-[10px] font-bold text-text-muted"
+										>#{token.rank}</span
+									>
+								{/if}
 							</div>
-							<div class="col-span-3 text-right">
+							<div class="text-[22px] leading-none font-black tracking-[-0.03em]">
+								{(token.symbol ?? '').toUpperCase()}
+							</div>
+							<div class="mt-1 mb-3.5 truncate text-[13px] text-text-muted">{token.name}</div>
+							<div class="mb-4 flex items-center justify-between gap-2">
+								<span class="font-mono text-[13px]">{fmtPrice(token.price)}</span>
 								{#if token.change24h != null}
 									<span
-										class="text-xs font-semibold"
-										style="color: {token.change24h >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'}"
-										>{fmtChg(token.change24h)}</span
+										class="rounded-full px-2.5 py-1 font-mono text-xs font-bold"
+										style="background:{token.change24h >= 0
+											? 'rgba(104,194,168,0.14)'
+											: 'rgba(232,112,112,0.14)'};color:{token.change24h >= 0
+											? 'var(--color-mint-ink)'
+											: 'var(--color-red-ink)'}">{fmtChg(token.change24h)}</span
 									>
-								{:else}
-									<span class="text-xs text-text-muted">—</span>
 								{/if}
 							</div>
-							<div class="col-span-3 text-right max-sm:hidden">
-								<span class="text-xs text-text-muted">{fmtVol(token.volume24h)}</span>
+							<button
+								type="button"
+								disabled={inLineup}
+								onclick={() => addToken(token)}
+								class="w-full rounded-full py-3 text-[13px] font-extrabold {inLineup
+									? 'cursor-default bg-primary text-text'
+									: 'cursor-pointer bg-transparent'}"
+								style={inLineup ? '' : `border:1.5px solid ${activeTheme.color};color:${activeTheme.ink}`}
+							>
+								{inLineup ? 'In your lineup' : `Drop into ${sectorTheme(activeSector).label}`}
+							</button>
+							<div class="mt-2 flex justify-between font-mono text-[10px] text-text-muted">
+								<span>vol {fmtVol(token.volume24h)}</span>
 							</div>
-						</button>
+						</div>
 					{/each}
 				</div>
-			</section>
+			</div>
 
-			<!-- ── Lock Lineup Button ──────────────────────────────── -->
-			<div class="pb-4">
-				{#if slotsFilledCount < 5}
-					<div class="mb-2.5 flex flex-wrap items-center justify-center gap-1.5">
-						{#each SECTORS as sector (sector.id)}
-							{@const filled = !!pickForSector(sector.id)}
-							{@const style = SECTOR_STYLE[sector.id]}
-							<div
-								class="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold"
-								style={filled
-									? `background: ${style.bg}; color: ${style.color}`
-									: 'background: var(--color-hover); color: var(--color-text-muted)'}
-							>
-								{#if filled}
-									<svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-										<path
-											fill-rule="evenodd"
-											d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-											clip-rule="evenodd"
-										/>
-									</svg>
-								{:else}
-									<svg
-										class="h-3 w-3"
-										fill="none"
-										viewBox="0 0 24 24"
-										stroke="currentColor"
-										stroke-width="2.5"
-									>
-										<circle cx="12" cy="12" r="10" />
-									</svg>
-								{/if}
-								{sector.name}
-							</div>
-						{/each}
+			<div class="flex min-w-0 flex-[1_1_280px] flex-col gap-3.5">
+				<div class="frost-panel rounded-[20px] p-[22px]">
+					<div class="mb-4.5 text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">
+						Projected score
+					</div>
+					<div
+						class="font-mono text-[44px] leading-none font-bold tracking-[-0.03em]"
+						style="color:{projectedScore >= 0 ? 'var(--color-coral-ink)' : 'var(--color-red-ink)'}"
+					>
+						{projectedScore >= 0 ? '+' : ''}{projectedScore}
+					</div>
+					<div class="mt-2 mb-4 text-xs text-text-muted">
+						Live estimate from your {slotsFilledCount} filled sector{slotsFilledCount === 1 ? '' : 's'}
+					</div>
+					<div class="h-2 overflow-hidden rounded-full bg-surface-alt">
+						<div
+							class="h-full rounded-full bg-primary transition-[width] duration-500"
+							style="width:{Math.min(100, (slotsFilledCount / 5) * 100)}%;box-shadow:0 0 18px rgba(247,142,121,0.8)"
+						></div>
+					</div>
+				</div>
+
+				{#if [...activeBoosts.keys()].length > 0}
+					<div class="rounded-[20px] border border-warning bg-surface p-[22px] shadow-[0_0_40px_rgba(247,201,120,0.14)]">
+						<div class="mb-3.5 text-[11px] font-extrabold tracking-[0.12em] text-warning-ink uppercase">
+							Boost active
+						</div>
+						<div class="flex flex-col gap-2.5">
+							{#each [...activeBoosts.keys()] as sid (sid)}
+								{@const t = sectorTheme(sid)}
+								<div class="flex items-center gap-3">
+									<div class="h-9.5 w-9.5 shrink-0 rounded-[10px]" style="background:{t.color}29;border:1px solid {t.color}"></div>
+									<div>
+										<div class="text-sm font-extrabold">{t.label} &times;1.25</div>
+										<div class="text-xs text-text-muted">From Research Hub</div>
+									</div>
+								</div>
+							{/each}
+						</div>
 					</div>
 				{/if}
 
@@ -915,48 +531,17 @@
 					type="button"
 					onclick={submitLineup}
 					disabled={slotsFilledCount !== 5 || submitting}
-					class="flex h-14 w-full items-center justify-center gap-2.5 rounded-xl text-base font-bold tracking-wide shadow-lg transition-all active:scale-[0.98]
-						{slotsFilledCount === 5
-						? 'cursor-pointer bg-primary text-white hover:bg-primary-hover'
-						: 'cursor-not-allowed bg-hover text-text-muted'}"
+					class="w-full rounded-full py-4.5 text-base font-extrabold tracking-wide transition-transform active:scale-[0.98] {slotsFilledCount ===
+					5
+						? 'cursor-pointer bg-primary text-text shadow-[0_0_40px_rgba(247,142,121,0.4)] hover:-translate-y-0.5'
+						: 'cursor-not-allowed bg-surface-alt text-text-muted'}"
 				>
-					{#if submitting}
-						<svg class="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
-							<circle
-								class="opacity-25"
-								cx="12"
-								cy="12"
-								r="10"
-								stroke="currentColor"
-								stroke-width="4"
-							/>
-							<path
-								class="opacity-75"
-								fill="currentColor"
-								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-							/>
-						</svg>
-						Submitting…
-					{:else if slotsFilledCount === 5}
-						<svg
-							class="h-5 w-5"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							stroke-width="2.5"
-						>
-							<rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path
-								d="M7 11V7a5 5 0 0110 0v4"
-							/>
-						</svg>
-						Lock Lineup
-					{:else}
-						Fill {5 - slotsFilledCount} more {5 - slotsFilledCount === 1 ? 'slot' : 'slots'} to lock
-					{/if}
+					{submitting ? 'Submitting…' : 'Lock lineup'}
 				</button>
+				<div class="text-center text-xs text-text-muted">{slotsFilledCount} of 5 sectors filled</div>
 			</div>
-		{/if}
-	</div>
+		</div>
+	{/if}
 </div>
 
 <Toast />

@@ -89,15 +89,15 @@ export async function GET({ params, url }) {
 	<meta name="twitter:image" content="${esc(cardUrl)}" />
 
 	<style>
-		body { font-family: system-ui, sans-serif; background: #F8F8F7; margin: 0; padding: 40px 16px; }
+		body { font-family: 'Archivo', system-ui, sans-serif; background: #F5FAFA; margin: 0; padding: 40px 16px; color: #1A2421; }
 		.card { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; align-items: center; }
-		img { width: 100%; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
-		.result { width: 100%; box-sizing: border-box; border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; background: white; padding: 16px; }
-		.status { font-weight: 700; color: ${didWin ? '#0F6E56' : '#993C1D'}; }
-		.actions { display: flex; gap: 8px; width: 100%; }
-		.actions a { flex: 1; box-sizing: border-box; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-weight: 700; font-size: 14px; text-decoration: none; }
-		.share-x { background: #0d0c18; color: white; }
-		.play { background: white; color: #5d5d6b; border: 1px solid rgba(0,0,0,0.1); }
+		img { width: 100%; border-radius: 18px; box-shadow: 0 12px 34px rgba(26,36,33,0.18); }
+		.result { width: 100%; box-sizing: border-box; border: 1px solid #E1E8E6; border-radius: 20px; background: #FFFFFF; padding: 20px; }
+		.status { font-weight: 800; color: ${didWin ? '#B04A32' : '#5C6B66'}; }
+		.actions { display: flex; gap: 10px; width: 100%; }
+		.actions a { flex: 1; box-sizing: border-box; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 999px; font-weight: 800; font-size: 14px; text-decoration: none; }
+		.share-x { background: #F78E79; color: #1A2421; }
+		.play { background: #FFFFFF; color: #5C6B66; border: 1px solid #E1E8E6; }
 	</style>
 </head>
 <body>

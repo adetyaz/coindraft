@@ -7,6 +7,7 @@
 	import favicon from '$lib/assets/images/logo_v4_appicon.svg';
 	import { SiweMessage } from 'siwe';
 	import bs58 from 'bs58';
+	import Ticker from '$lib/components/ui/Ticker.svelte';
 
 	let { children, data } = $props();
 	const appkitReady = Boolean(appKit);
@@ -14,8 +15,26 @@
 	let lastAttemptedWallet = '';
 	let walletConnected = $state(false);
 	let signError = $state(false);
-	let isLight = $state(false);
 	let openNavGroup = $state<string | null>(null);
+	let tickerItems = $state<string[]>([]);
+
+	onMount(async () => {
+		try {
+			const res = await fetch('/api/tokens');
+			if (res.ok) {
+				const tokens: { symbol?: string; change24h: number | null }[] = await res.json();
+				tickerItems = tokens
+					.filter((t) => t.change24h != null)
+					.slice(0, 14)
+					.map(
+						(t) =>
+							`${(t.symbol ?? '').toUpperCase()} ${t.change24h! >= 0 ? '+' : ''}${t.change24h!.toFixed(1)}%`
+					);
+			}
+		} catch {
+			// Ticker is decorative — a failed fetch just leaves it empty.
+		}
+	});
 
 	const NAV_GROUPS: { label: string; items: { href: string; label: string }[] }[] = [
 		{
@@ -55,10 +74,6 @@
 	}
 
 	onMount(() => {
-		isLight = document.documentElement.getAttribute('data-theme') === 'light';
-	});
-
-	onMount(() => {
 		function handleClickOutside(e: MouseEvent) {
 			if (!(e.target as HTMLElement).closest('[data-nav-dropdown]')) {
 				openNavGroup = null;
@@ -67,17 +82,6 @@
 		document.addEventListener('click', handleClickOutside);
 		return () => document.removeEventListener('click', handleClickOutside);
 	});
-
-	function toggleTheme() {
-		isLight = !isLight;
-		if (isLight) {
-			document.documentElement.setAttribute('data-theme', 'light');
-			localStorage.setItem('theme', 'light');
-		} else {
-			document.documentElement.removeAttribute('data-theme');
-			localStorage.setItem('theme', 'dark');
-		}
-	}
 
 	type MaybeEthereum = {
 		request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
@@ -287,76 +291,44 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-<nav class="sticky top-0 z-50 flex h-11 items-center border-b border-border bg-surface px-3.5">
-	<div class="mx-auto flex w-full max-w-6xl items-center justify-between">
-		<a href="/" class="flex items-center gap-2 no-underline">
-			<svg width="30" height="30" viewBox="0 0 40 40" aria-hidden="true">
-				<rect
-					x="4"
-					y="6"
-					width="30"
-					height="30"
-					rx="7"
-					fill="var(--color-primary)"
-					transform="rotate(-8 19 21)"
-				/>
-				<line
-					x1="12"
-					y1="16"
-					x2="26"
-					y2="16"
-					stroke="white"
-					stroke-width="2"
-					stroke-linecap="round"
-					opacity="0.9"
-					transform="rotate(-8 19 21)"
-				/>
-				<line
-					x1="12"
-					y1="22"
-					x2="22"
-					y2="22"
-					stroke="white"
-					stroke-width="2"
-					stroke-linecap="round"
-					opacity="0.6"
-					transform="rotate(-8 19 21)"
-				/>
-				<circle cx="30" cy="10" r="9" fill="var(--color-positive)" stroke="var(--color-surface)" stroke-width="2" />
-				<text
-					x="30"
-					y="13.5"
-					text-anchor="middle"
-					font-family="Inter, sans-serif"
-					font-weight="700"
-					font-size="9"
-					fill="white">$</text
-				>
-			</svg>
-			<span class="text-lg font-semibold tracking-tight text-text">CoinDraft</span>
+<div class="min-h-screen bg-bg text-text">
+	<nav class="sticky top-0 z-50 flex items-center justify-between gap-6 border-b border-border bg-surface px-7 py-3.5">
+		<a href="/" class="flex shrink-0 items-center gap-2.5 no-underline">
+			<span class="relative h-6 w-6 shrink-0">
+				<span
+					class="absolute inset-0 rounded-md bg-primary shadow-[0_0_22px_rgba(247,142,121,0.55)]"
+					style="transform:rotate(45deg)"
+				></span>
+				<span class="absolute top-2 left-2 h-2 w-2 rounded-[2px] bg-text" style="transform:rotate(45deg)"
+				></span>
+			</span>
+			<span class="text-[19px] font-black tracking-[-0.03em] text-text">CoinDraft</span>
 		</a>
 
-		<div class="ml-8 flex min-w-0 flex-1 items-center gap-1.5 max-sm:ml-3">
+		<div class="frost-panel flex min-w-0 flex-wrap items-center justify-center gap-0.5 rounded-full p-1">
 			<a
 				href="/"
-				class="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-text-secondary transition hover:bg-hover hover:text-text"
-				class:bg-primary-muted={page.url.pathname === '/'}
-				class:text-primary={page.url.pathname === '/'}>Home</a
+				class="shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-medium text-text-muted no-underline transition"
+				class:bg-surface-alt={page.url.pathname === '/'}
+				class:font-bold={page.url.pathname === '/'}
+				class:text-text={page.url.pathname === '/'}>Home</a
 			>
 			<a
 				href="/dashboard"
-				class="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-text-secondary transition hover:bg-hover hover:text-text"
-				class:bg-primary-muted={page.url.pathname.startsWith('/dashboard')}
-				class:text-primary={page.url.pathname.startsWith('/dashboard')}>Dashboard</a
+				class="shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-medium text-text-muted no-underline transition"
+				class:bg-surface-alt={page.url.pathname.startsWith('/dashboard')}
+				class:font-bold={page.url.pathname.startsWith('/dashboard')}
+				class:text-text={page.url.pathname.startsWith('/dashboard')}>Dashboard</a
 			>
 			{#each NAV_GROUPS as group (group.label)}
 				<div class="relative shrink-0" data-nav-dropdown>
 					<button
 						type="button"
 						onclick={() => (openNavGroup = openNavGroup === group.label ? null : group.label)}
-						class="flex cursor-pointer items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-text-secondary transition hover:bg-hover hover:text-text"
-						class:bg-primary-muted={groupIsActive(group)}
-						class:text-primary={groupIsActive(group)}
+						class="flex cursor-pointer items-center gap-1 rounded-full px-3.5 py-1.5 text-[13px] font-medium text-text-muted transition"
+						class:bg-surface-alt={groupIsActive(group)}
+						class:font-bold={groupIsActive(group)}
+						class:text-text={groupIsActive(group)}
 					>
 						{group.label.charAt(0).toUpperCase() + group.label.slice(1)}
 						<svg
@@ -371,15 +343,15 @@
 					</button>
 					{#if openNavGroup === group.label}
 						<div
-							class="absolute top-full left-0 z-50 mt-1 min-w-36 rounded-lg border border-border bg-surface p-1 shadow-lg"
+							class="absolute top-full left-0 z-50 mt-2 min-w-36 rounded-xl border border-border bg-surface p-1 shadow-[0_12px_34px_rgba(26,36,33,0.14)]"
 						>
 							{#each group.items as item (item.href)}
 								<a
 									href={item.href}
 									onclick={() => (openNavGroup = null)}
-									class="block rounded-md px-3 py-1.5 text-sm font-medium text-text-secondary no-underline transition hover:bg-hover hover:text-text"
+									class="block rounded-lg px-3 py-1.5 text-[13px] font-medium text-text-muted no-underline transition hover:bg-hover hover:text-text"
 									class:bg-primary-muted={page.url.pathname.startsWith(item.href)}
-									class:text-primary={page.url.pathname.startsWith(item.href)}
+									class:text-primary-ink={page.url.pathname.startsWith(item.href)}
 									>{item.label.charAt(0).toUpperCase() + item.label.slice(1)}</a
 								>
 							{/each}
@@ -389,60 +361,35 @@
 			{/each}
 		</div>
 
-		<div class="flex items-center gap-3">
-			<button
-				onclick={toggleTheme}
-				aria-label="Toggle theme"
-				class="grid h-8 w-8 cursor-pointer place-items-center rounded-full border border-border bg-transparent text-text-secondary transition hover:bg-hover"
-			>
-				{#if isLight}
-					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-						/>
-					</svg>
-				{:else}
-					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-						<circle cx="12" cy="12" r="4" />
-						<path
-							stroke-linecap="round"
-							d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"
-						/>
-					</svg>
-				{/if}
-			</button>
-
+		<div class="flex shrink-0 items-center gap-2.5">
 			{#if data.user}
-				<div class="rounded-[99px] bg-primary-muted px-3 py-1 text-xs font-medium text-primary">
-					{data.user.xpTotal ?? 0} XP
-				</div>
-				<div
-					class="grid h-8 w-8 place-items-center rounded-full bg-primary text-sm font-medium text-white"
+				<span class="font-mono text-xs whitespace-nowrap text-text-muted">{data.user.xpTotal ?? 0} XP</span>
+				<a
+					href="/profile"
+					class="grid h-8 w-8 place-items-center rounded-full border border-border bg-surface-alt no-underline transition hover:border-primary"
 				>
 					{data.user.username?.[0]?.toUpperCase() ?? '?'}
-				</div>
+				</a>
 				<button
 					onclick={logout}
-					class="cursor-pointer rounded border border-border bg-transparent px-3 py-1 text-xs text-text-secondary transition hover:bg-hover hover:text-text"
-					>logout</button
+					class="cursor-pointer rounded-full border border-border bg-transparent px-3 py-1.5 text-xs font-bold whitespace-nowrap text-text-muted transition hover:bg-hover hover:text-text"
+					>Log out</button
 				>
 			{:else if walletConnected}
 				{#if authInFlight}
-					<span class="text-xs text-text-secondary">Signing...</span>
+					<span class="text-xs whitespace-nowrap text-text-muted">Signing...</span>
 				{:else if signError}
-					<span class="text-xs text-negative">Signature failed.</span>
+					<span class="text-xs whitespace-nowrap text-negative-ink">Signature failed.</span>
 					<button
 						onclick={retrySign}
-						class="cursor-pointer rounded bg-primary px-3 py-1 text-xs font-medium text-white transition hover:bg-primary-hover"
+						class="cursor-pointer rounded-full border-none bg-primary px-3.5 py-1.5 text-xs font-bold whitespace-nowrap text-text transition hover:bg-primary-hover"
 						>Try again</button
 					>
 				{:else}
-					<span class="text-xs text-text-secondary">Wallet connected —</span>
+					<span class="text-xs whitespace-nowrap text-text-muted">Wallet connected —</span>
 					<button
 						onclick={retrySign}
-						class="cursor-pointer rounded bg-primary px-3 py-1 text-xs font-medium text-white transition hover:bg-primary-hover"
+						class="cursor-pointer rounded-full border-none bg-primary px-3.5 py-1.5 text-xs font-bold whitespace-nowrap text-text transition hover:bg-primary-hover"
 						>Sign to verify</button
 					>
 				{/if}
@@ -450,14 +397,18 @@
 				<appkit-button></appkit-button>
 			{:else}
 				<button
-					class="cursor-not-allowed rounded border border-border bg-transparent px-3 py-1 text-xs text-text-secondary"
+					class="cursor-not-allowed rounded-full border border-border bg-transparent px-3.5 py-1.5 text-xs whitespace-nowrap text-text-muted"
 					disabled>loading wallet...</button
 				>
 			{/if}
 		</div>
-	</div>
-</nav>
+	</nav>
 
-<main class="mx-auto max-w-6xl p-3.5">
-	{@render children()}
-</main>
+	{#if tickerItems.length > 0}
+		<Ticker items={tickerItems} />
+	{/if}
+
+	<main>
+		{@render children()}
+	</main>
+</div>

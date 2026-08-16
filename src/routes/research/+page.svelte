@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { SECTORS } from '$lib/constants';
+	import { sectorTheme } from '$lib/sectorTheme';
 	import { toast } from '$lib/toast';
 	import Toast from '$lib/components/Toast.svelte';
 
@@ -15,26 +16,15 @@
 		sector: string;
 	};
 
+	type ActiveBoost = { sector: string; expiresAt: string };
+
 	let articles = $state<Article[]>([]);
 	let loading = $state(true);
 	let activeFilter = $state('all');
 	let expandedId = $state('');
 	let boostClaimedToday = $state(false);
 	let claiming = $state(false);
-
-	function sectorStyle(varName: string) {
-		return {
-			color: `var(--color-sector-${varName})`,
-			bg: `color-mix(in oklab, var(--color-sector-${varName}) 18%, transparent)`
-		};
-	}
-	const SECTOR_STYLE: Record<string, { color: string; bg: string }> = {
-		l1: sectorStyle('l1'),
-		l2: sectorStyle('l2'),
-		defi: sectorStyle('defi'),
-		meme: sectorStyle('meme'),
-		wildcard: sectorStyle('wildcard')
-	};
+	let activeBoosts = $state<ActiveBoost[]>([]);
 
 	onMount(async () => {
 		try {
@@ -48,7 +38,23 @@
 		} finally {
 			loading = false;
 		}
+		try {
+			const meRes = await fetch('/api/me');
+			if (meRes.ok) {
+				const me = await meRes.json();
+				const now = new Date().toISOString();
+				activeBoosts = (me.activeBoosts ?? []).filter((b: ActiveBoost) => b.expiresAt > now);
+			}
+		} catch {
+			/* boosts sidebar is a nice-to-have */
+		}
 	});
+
+	function hoursLeft(expiresAt: string): string {
+		const ms = new Date(expiresAt).getTime() - Date.now();
+		const h = Math.max(0, Math.round(ms / 3_600_000));
+		return h <= 1 ? '<1h left' : `${h}h left`;
+	}
 
 	const filtered = $derived(
 		activeFilter === 'all' ? articles : articles.filter((a) => a.sector === activeFilter)
@@ -83,6 +89,10 @@
 			if (data.awarded) {
 				boostClaimedToday = true;
 				toast(`+${data.xp} XP · ${sectorName(data.sector)} boost active for 24h`, 'success');
+				activeBoosts = [
+					...activeBoosts.filter((b) => b.sector !== data.sector),
+					{ sector: data.sector, expiresAt: new Date(Date.now() + 24 * 3_600_000).toISOString() }
+				];
 			} else {
 				boostClaimedToday = true;
 			}
@@ -94,93 +104,125 @@
 	}
 </script>
 
-<div class="flex flex-col gap-3">
-	<div>
-		<h1 class="text-lg font-semibold text-text">Research Hub</h1>
-		<p class="mt-0.5 text-xs text-text-muted">
-			Read one article a day for a free sector boost on your next draft.
-		</p>
-	</div>
-
-	<div class="flex flex-wrap gap-1.5">
-		<button
-			class="cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition {activeFilter ===
-			'all'
-				? 'border-primary bg-primary-muted text-primary'
-				: 'border-border bg-surface text-text-secondary hover:bg-hover'}"
-			onclick={() => (activeFilter = 'all')}>All</button
-		>
-		{#each SECTORS as s (s.id)}
+<div class="mx-auto max-w-[1360px] px-7 pt-7 pb-18">
+	<div class="mb-4.5 flex flex-wrap items-end justify-between gap-6">
+		<div>
+			<h1 class="text-[40px] leading-none font-black tracking-[-0.04em]">Research Hub</h1>
+			<p class="mt-2 text-sm text-text-muted">
+				Read a sector briefing, claim the boost, take it into the draft
+			</p>
+		</div>
+		<div class="flex flex-wrap gap-2">
 			<button
-				class="cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition {activeFilter ===
-				s.id
-					? 'border-primary bg-primary-muted text-primary'
-					: 'border-border bg-surface text-text-secondary hover:bg-hover'}"
-				onclick={() => (activeFilter = s.id)}>{s.name}</button
+				class="cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-bold whitespace-nowrap transition"
+				style={activeFilter === 'all'
+					? 'background:var(--color-primary);border:1px solid var(--color-primary);color:var(--color-ink)'
+					: 'background:var(--color-surface);border:1px solid var(--color-border);color:var(--color-text-muted)'}
+				onclick={() => (activeFilter = 'all')}>All</button
 			>
-		{/each}
-	</div>
-
-	{#if loading}
-		<p class="py-8 text-center text-sm text-text-muted">Loading research feed...</p>
-	{:else if filtered.length === 0}
-		<p class="py-8 text-center text-sm text-text-muted">No articles available right now.</p>
-	{:else}
-		<div class="flex flex-col gap-2">
-			{#each filtered as article (article.id)}
-				{@const style = SECTOR_STYLE[article.sector] ?? SECTOR_STYLE.wildcard}
-				{@const isOpen = expandedId === article.id}
-				<div class="rounded-xl border border-border bg-surface px-4 py-3">
-					<button
-						type="button"
-						class="flex w-full cursor-pointer items-start justify-between gap-3 text-left"
-						onclick={() => expand(article)}
-					>
-						<div class="min-w-0 flex-1">
-							<div class="mb-1 flex items-center gap-2">
-								<span
-									class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
-									style="background: {style.bg}; color: {style.color}"
-									>{sectorName(article.sector)}</span
-								>
-								<span class="text-[11px] text-text-muted"
-									>{article.source}{article.date ? ` · ${fmtDate(article.date)}` : ''}</span
-								>
-							</div>
-							<p class="text-sm font-medium text-text">{article.title}</p>
-						</div>
-						<svg
-							class="mt-1 h-4 w-4 shrink-0 text-text-muted transition-transform {isOpen
-								? 'rotate-180'
-								: ''}"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							stroke-width="2"
-						>
-							<polyline points="6 9 12 15 18 9" />
-						</svg>
-					</button>
-					{#if isOpen}
-						<div class="mt-3 border-t border-border pt-3">
-							<p class="text-[13px] leading-relaxed whitespace-pre-line text-text-secondary">
-								{article.content}
-							</p>
-							{#if article.url}
-								<a
-									href={article.url}
-									target="_blank"
-									rel="noopener noreferrer"
-									class="mt-2 inline-block text-[11px] font-medium text-primary hover:underline"
-									>Read full source →</a
-								>
-							{/if}
-						</div>
-					{/if}
-				</div>
+			{#each SECTORS as s (s.id)}
+				<button
+					class="cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-bold whitespace-nowrap transition"
+					style={activeFilter === s.id
+						? `background:${sectorTheme(s.id).color};border:1px solid ${sectorTheme(s.id).color};color:var(--color-ink)`
+						: 'background:var(--color-surface);border:1px solid var(--color-border);color:var(--color-text-muted)'}
+					onclick={() => (activeFilter = s.id)}>{s.name}</button
+				>
 			{/each}
 		</div>
-	{/if}
+	</div>
+
+	<div class="flex flex-wrap gap-4.5">
+		<div class="min-w-0 flex-[1_1_520px]">
+			{#if loading}
+				<p class="py-10 text-center text-sm text-text-muted">Loading research feed…</p>
+			{:else if filtered.length === 0}
+				<p class="py-10 text-center text-sm text-text-muted">No articles available right now.</p>
+			{:else}
+				<div class="flex flex-col gap-3.5">
+					{#each filtered as article (article.id)}
+						{@const theme = sectorTheme(article.sector)}
+						{@const isOpen = expandedId === article.id}
+						<div class="rounded-[20px] border border-border bg-surface p-6">
+							<button
+								type="button"
+								class="flex w-full cursor-pointer items-start justify-between gap-4 text-left"
+								onclick={() => expand(article)}
+							>
+								<div class="min-w-0 flex-1">
+									<div class="mb-2.5 flex flex-wrap items-center gap-2.5">
+										<span
+											class="rounded-full px-2.5 py-1 text-[10px] font-extrabold tracking-[0.1em] uppercase"
+											style="background:{theme.color}24;border:1px solid {theme.color};color:{theme.ink}"
+											>{sectorName(article.sector)}</span
+										>
+										<span class="font-mono text-[11px] text-text-muted"
+											>{article.source}{article.date ? ` · ${fmtDate(article.date)}` : ''}</span
+										>
+									</div>
+									<p class="text-lg leading-snug font-extrabold tracking-[-0.01em]">{article.title}</p>
+								</div>
+								<svg
+									class="mt-1.5 h-4 w-4 shrink-0 text-text-muted transition-transform {isOpen
+										? 'rotate-180'
+										: ''}"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									stroke-width="2"
+								>
+									<polyline points="6 9 12 15 18 9" />
+								</svg>
+							</button>
+							{#if isOpen}
+								<div class="mt-4 border-t border-border pt-4">
+									<p class="text-sm leading-[1.7] whitespace-pre-line text-text-body">{article.content}</p>
+									{#if article.url}
+										<a
+											href={article.url}
+											target="_blank"
+											rel="noopener noreferrer"
+											class="mt-2.5 inline-block text-xs font-bold text-primary-ink hover:underline"
+											>Read full source &rarr;</a
+										>
+									{/if}
+								</div>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</div>
+
+		<div class="flex min-w-0 flex-[1_1_280px] flex-col gap-3.5">
+			<div class="rounded-[20px] border border-border bg-surface p-[22px]">
+				<div class="mb-4.5 text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">
+					Boosts ready
+				</div>
+				{#if activeBoosts.length === 0}
+					<p class="text-xs text-text-muted">No active boosts — expand an article to claim one.</p>
+				{:else}
+					<div class="flex flex-col gap-3.5">
+						{#each activeBoosts as b (b.sector)}
+							{@const theme = sectorTheme(b.sector)}
+							<div class="flex items-center justify-between gap-3">
+								<div class="flex items-center gap-2.5">
+									<div class="h-2.5 w-2.5 rounded-[3px]" style="background:{theme.color}"></div>
+									<span class="text-[13px] font-bold">{theme.label} &times;1.25</span>
+								</div>
+								<span class="font-mono text-xs text-text-muted">{hoursLeft(b.expiresAt)}</span>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+			<a
+				href="/draft"
+				class="w-full rounded-full bg-primary py-3.5 text-center text-sm font-extrabold text-text no-underline"
+				>Take boosts to draft</a
+			>
+		</div>
+	</div>
 </div>
 
 <Toast />

@@ -3,6 +3,8 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import Gauntlet from '$lib/components/Gauntlet.svelte';
+	import StatBlock from '$lib/components/ui/StatBlock.svelte';
+	import Bar from '$lib/components/ui/Bar.svelte';
 	import type { BadgeDef } from '$lib/badges';
 
 	let contests = $state<Array<Record<string, unknown>>>([]);
@@ -150,189 +152,171 @@
 	}
 </script>
 
-<div class="flex flex-col gap-3">
-	<section class="grid grid-cols-3 gap-3 max-[900px]:grid-cols-1">
-		<div class="rounded-xl border border-border bg-surface px-3.5 py-3">
-			<p class="text-[11px] font-medium text-text-muted uppercase">Active Contests</p>
-			<div class="mt-2 flex items-center justify-between gap-2">
-				<h2 class="text-[28px] leading-none font-medium text-text">
-					{contests.filter((c) => c.status !== 'resolved').length}
-				</h2>
-				<span class="rounded-full bg-positive/15 px-2 py-0.5 text-[11px] font-medium text-positive"
-					>In progress</span
-				>
+<div class="mx-auto max-w-[1360px] px-7 pt-7 pb-18">
+	<div class="mb-4.5 flex flex-wrap gap-4.5">
+		<div class="hero-coral dot-grid flex min-w-0 flex-[1_1_520px] flex-col justify-between gap-7 rounded-[24px] p-9">
+			<div class="flex flex-wrap items-start justify-between gap-4">
+				<span class="rounded-full bg-text px-3 py-1.5 font-mono text-[11px] font-bold tracking-[0.14em] text-primary uppercase">
+					{resolvedContests.length > 0 ? `${winRate}% win rate` : 'New player'}
+				</span>
+				{#if contests.filter((c) => c.status !== 'resolved').length > 0}
+					<span class="font-mono text-[13px] font-bold"
+						>{contests.filter((c) => c.status !== 'resolved').length} active</span
+					>
+				{/if}
 			</div>
-		</div>
-		<div class="rounded-xl border border-border bg-surface px-3.5 py-3">
-			<p class="text-[11px] font-medium text-text-muted uppercase">Resolved Contests</p>
-			<div class="mt-2 flex items-center justify-between gap-2">
-				<h2 class="text-[28px] leading-none font-medium text-text">{resolvedContests.length}</h2>
-				<span class="text-lg">🏁</span>
-			</div>
-		</div>
-		<div class="rounded-xl border border-border bg-surface px-3.5 py-3">
-			<p class="text-[11px] font-medium text-text-muted uppercase">Win Rate</p>
-			<div class="mt-2 flex items-center justify-between gap-2">
-				<h2 class="text-[28px] leading-none font-medium text-text">
-					{resolvedContests.length > 0 ? `${winRate}%` : '—'}
-				</h2>
-				<span class="text-xs text-text-muted">{user?.username ?? 'player'}</span>
-			</div>
-		</div>
-	</section>
-
-	{#if !loading && contests.length === 0}
-		<!-- New-user nudge toward Paper Mode -->
-		<section class="flex items-center justify-between gap-3 rounded-xl bg-primary-muted p-4">
 			<div>
-				<h1 class="text-base leading-[1.2] font-semibold text-primary">New here? Try practice mode first</h1>
-				<p class="mt-1 text-xs text-text-secondary">
-					Draft against a bot with zero stakes — no real XP, just a feel for how scoring works.
+				<div class="max-w-[14ch] text-[46px] leading-[0.95] font-black tracking-[-0.045em] max-sm:text-[34px]">
+					{contests.length === 0 ? 'Draft your first lineup' : 'Ready for your next contest'}
+				</div>
+				<p class="mt-3.5 max-w-[46ch] text-[15px] opacity-80">
+					{contests.length === 0
+						? 'Five sectors, one token each, twenty-four hours to prove your read.'
+						: `${resolvedContests.length} contest${resolvedContests.length === 1 ? '' : 's'} resolved so far this season.`}
 				</p>
 			</div>
-			<button
-				class="h-10 shrink-0 cursor-pointer rounded-lg border-0 bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
-				onclick={() => createContest('daily', 'paper')}
-			>
-				Try Practice Mode
-			</button>
-		</section>
-	{/if}
-
-	<!-- Matchmaking CTA -->
-	<section class="flex items-center justify-between gap-3 rounded-xl bg-sector-l1 p-4 text-white">
-		<div>
-			<h1 class="text-xl leading-[1.2] font-medium">Find a Real Opponent</h1>
-			<p class="mt-1 text-xs opacity-90">Match against another player in real-time</p>
+			<div class="flex flex-wrap gap-2.5">
+				<button
+					class="cursor-pointer rounded-full bg-text px-[26px] py-3.5 text-sm font-extrabold text-primary transition hover:-translate-y-0.5"
+					onclick={() => goto('/matchmaking')}
+				>
+					Find an opponent
+				</button>
+				<button
+					class="cursor-pointer rounded-full border-[1.5px] border-text bg-transparent px-[26px] py-3.5 text-sm font-bold text-text"
+					onclick={() => goto('/draft')}
+				>
+					Open draft
+				</button>
+				{#if contests.length === 0}
+					<button
+						class="cursor-pointer rounded-full border-[1.5px] border-text bg-transparent px-[26px] py-3.5 text-sm font-bold text-text"
+						onclick={() => createContest('daily', 'paper')}
+					>
+						Try practice mode
+					</button>
+				{/if}
+			</div>
 		</div>
-		<button
-			class="h-10 cursor-pointer rounded-lg border-0 bg-white px-4 font-medium text-sector-l1 transition-colors hover:bg-white/90"
-			onclick={() => goto('/matchmaking')}
-		>
-			Find Match
-		</button>
-	</section>
 
-	<div class="grid grid-cols-2 gap-3 max-[900px]:grid-cols-1">
-		<section class="rounded-xl border border-border bg-surface px-3.5 py-3">
-			<div class="mb-2.5 flex items-center justify-between">
-				<h3 class="text-[11px] font-medium text-text-muted uppercase">Sector Wars</h3>
-				<small class="text-[11px] text-text-muted">Live 15m Cache</small>
+		<div class="flex min-w-0 flex-[1_1_280px] flex-col gap-3.5">
+			<Gauntlet />
+			<div class="grid grid-cols-2 gap-4.5 rounded-[20px] border border-border bg-surface p-[22px]">
+				<StatBlock value={resolvedContests.length > 0 ? `${winRate}%` : '—'} label="Win rate" color="var(--color-mint-ink)" />
+				<StatBlock value={String(resolvedContests.length)} label="Resolved" />
+			</div>
+		</div>
+	</div>
+
+	<div class="mb-4.5 flex flex-wrap gap-4.5">
+		<div class="min-w-0 flex-[1_1_340px] rounded-[20px] border border-border bg-surface p-[22px]">
+			<div class="mb-4.5 text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">
+				Sector performance
 			</div>
 			{#if loading}
-				<p class="text-xs text-text-muted">Loading sector data...</p>
+				<p class="text-xs text-text-muted">Loading sector data…</p>
 			{:else if sectors.length === 0}
 				<p class="text-xs text-text-muted">Sector feed unavailable.</p>
 			{:else}
-				<div class="flex flex-col gap-2">
+				<div class="flex flex-col gap-3">
 					{#each sectors as sector, i (sector?.sector ?? sector?.name ?? i)}
-						<div class="flex flex-col gap-1">
-							<div class="flex justify-between text-[13px] text-text">
-								<span>{sector.sector ?? sector.name ?? 'Sector'}</span>
-								<span
-									class:text-positive={Number(sector.change ?? 0) >= 0}
-									class:text-negative={Number(sector.change ?? 0) < 0}
-									class="font-medium"
-								>
-									{formatPct(Number(sector.change ?? 0))}
-								</span>
+						{@const chg = Number(sector.change ?? 0)}
+						<div class="flex items-center gap-2.5">
+							<span class="w-14 text-xs font-bold">{sector.sector ?? sector.name ?? 'Sector'}</span>
+							<div class="flex-1">
+								<Bar
+									pct={Math.max(8, Math.min(100, Math.abs(chg) * 8))}
+									color={chg >= 0 ? 'var(--color-mint)' : 'var(--color-red)'}
+									height="6px"
+								/>
 							</div>
-							<div class="h-2 overflow-hidden rounded-full bg-border">
-								<div
-									class="h-full bg-primary"
-									style={`width: ${Math.max(8, Math.min(100, Math.abs(Number(sector.change ?? 0)) * 8))}%`}
-								></div>
-							</div>
+							<span
+								class="w-12 text-right font-mono text-xs font-bold"
+								style="color:{chg >= 0 ? 'var(--color-mint-ink)' : 'var(--color-red-ink)'}">{formatPct(chg)}</span
+							>
 						</div>
 					{/each}
 				</div>
 			{/if}
-		</section>
+		</div>
 
-		<section class="rounded-xl border border-border bg-surface px-3.5 py-3">
-			<div class="mb-2.5 flex items-center justify-between">
-				<h3 class="text-[11px] font-medium text-text-muted uppercase">Whale Watch</h3>
-				<small class="text-[11px] text-text-muted">ETF Flow Alerts</small>
+		<div class="min-w-0 flex-[1_1_340px] rounded-[20px] border border-border bg-surface p-[22px]">
+			<div class="mb-4.5 flex items-center gap-2">
+				<span class="anim-blink h-[7px] w-[7px] rounded-full bg-negative"></span>
+				<span class="text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">Whale flow</span>
 			</div>
 			{#if alerts.length === 0}
 				<p class="text-xs text-text-muted">No active alerts right now.</p>
 			{:else}
-				<div class="flex flex-col gap-2">
+				<div class="flex flex-col gap-3.5">
 					{#each alerts.slice(0, 3) as alert, i (alert?.date ?? `${alert?.type ?? 'alert'}-${i}`)}
-						<div class="flex gap-2 rounded-lg bg-surface-raised p-2.5">
-							<div class="mt-1.5 h-2 w-2 rounded-full bg-primary"></div>
-							<div>
-								<p class="text-[13px] font-medium text-text">{alert.type} streak detected</p>
-								<small class="text-[11px] text-text-muted"
-									>{alert.streak} days · ${Math.round(Number(alert.amount)).toLocaleString()}</small
-								>
+						<div class="flex items-start justify-between gap-3">
+							<div class="min-w-0">
+								<p class="text-[13px] font-bold">{alert.type} streak detected</p>
+								<p class="font-mono text-[11px] text-text-muted">{alert.streak} days</p>
 							</div>
+							<span class="shrink-0 font-mono text-[13px] font-bold text-primary-ink"
+								>${Math.round(Number(alert.amount)).toLocaleString()}</span
+							>
 						</div>
 					{/each}
 				</div>
 			{/if}
-		</section>
+		</div>
 	</div>
 
-	<!-- Gauntlet -->
-	<Gauntlet />
-
-	<!-- Badges -->
-	<section class="rounded-xl border border-border bg-surface px-3.5 py-3">
-		<div class="mb-2.5 flex items-center justify-between">
-			<h3 class="text-[11px] font-medium text-text-muted uppercase">Badges</h3>
-			<small class="text-[11px] text-text-muted"
-				>{badges.filter((b) => b.earned).length}/{badges.length} unlocked</small
-			>
+	<div class="mb-4.5 rounded-[20px] border border-border bg-surface p-[22px]">
+		<div class="mb-4.5 flex items-center justify-between">
+			<div class="text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">Badges</div>
+			<span class="font-mono text-xs text-text-muted">{badges.filter((b) => b.earned).length}/{badges.length} unlocked</span>
 		</div>
-		<div class="flex flex-wrap gap-2">
+		<div class="flex flex-wrap gap-2.5">
 			{#each badges as badge (badge.code)}
 				<div
-					class="flex items-center gap-2 rounded-lg border px-2.5 py-1.5 {badge.earned
-						? 'border-primary/20 bg-primary-muted'
-						: 'border-border bg-surface-raised opacity-50'}"
+					class="flex items-center gap-2.5 rounded-full border px-3.5 py-2"
+					style={badge.earned
+						? 'border-color:var(--color-primary);background:var(--color-primary-muted)'
+						: 'border-color:var(--color-border);background:var(--color-surface-alt);opacity:0.55'}
 					title={badge.description}
 				>
 					<span class="text-base {badge.earned ? '' : 'grayscale'}">{badge.emoji}</span>
-					<span class="text-xs font-medium {badge.earned ? 'text-primary' : 'text-text-muted'}"
+					<span
+						class="text-xs font-bold"
+						style={badge.earned ? 'color:var(--color-primary-ink)' : 'color:var(--color-text-muted)'}
 						>{badge.name}</span
 					>
 				</div>
 			{/each}
 		</div>
-	</section>
+	</div>
 
-	<div class="grid grid-cols-2 gap-3 max-[900px]:grid-cols-1">
-		<!-- Hot Tokens -->
-		<section class="rounded-xl border border-border bg-surface px-3.5 py-3">
-			<div class="mb-2.5 flex items-center justify-between">
-				<h3 class="text-[11px] font-medium text-text-muted uppercase">Hot Tokens</h3>
-				<small class="text-[11px] text-text-muted">Top movers</small>
+	<div class="mb-4.5 flex flex-wrap gap-4.5">
+		<div class="min-w-0 flex-[1_1_340px] rounded-[20px] border border-border bg-surface p-[22px]">
+			<div class="mb-4.5 flex items-center justify-between">
+				<div class="text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">Hot tokens</div>
 			</div>
 			{#if loading}
-				<p class="text-xs text-text-muted">Loading tokens...</p>
+				<p class="text-xs text-text-muted">Loading tokens…</p>
 			{:else if tokens.length === 0}
 				<p class="text-xs text-text-muted">Token data unavailable.</p>
 			{:else}
 				<div class="flex flex-col divide-y divide-border">
 					{#each tokens.slice(0, 5) as token (token.currency_id)}
-						<div class="flex items-center justify-between py-2">
+						<div class="flex items-center justify-between py-2.5">
 							<div class="flex items-center gap-2.5">
 								<div
-									class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-white"
+									class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-text"
 									style="background: {avatarBg(token.symbol ?? '')}"
 								>
 									{(token.symbol ?? '?').charAt(0).toUpperCase()}
 								</div>
 								<div>
-									<p class="text-[13px] font-semibold text-text">
-										{(token.symbol ?? '').toUpperCase()}
-									</p>
+									<p class="text-[13px] font-bold">{(token.symbol ?? '').toUpperCase()}</p>
 									<p class="text-[11px] text-text-muted">{token.name}</p>
 								</div>
 							</div>
 							<div class="text-right">
-								<p class="text-[13px] font-medium text-text">
+								<p class="font-mono text-[13px] font-bold">
 									{token.price != null
 										? token.price >= 1000
 											? `$${token.price.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
@@ -341,9 +325,8 @@
 								</p>
 								{#if token.change24h != null}
 									<span
-										class="text-[11px] font-medium"
-										class:text-positive={token.change24h >= 0}
-										class:text-negative={token.change24h < 0}
+										class="font-mono text-[11px] font-bold"
+										style="color:{token.change24h >= 0 ? 'var(--color-mint-ink)' : 'var(--color-red-ink)'}"
 										>{formatPct(token.change24h)}</span
 									>
 								{/if}
@@ -352,32 +335,26 @@
 					{/each}
 				</div>
 			{/if}
-			<div class="mt-2 border-t border-border pt-2">
-				<a href="/draft" class="text-xs font-medium text-primary no-underline hover:underline"
-					>Draft a token from this list →</a
+			<div class="mt-2.5 border-t border-border pt-2.5">
+				<a href="/draft" class="text-xs font-bold text-primary-ink no-underline hover:underline"
+					>Draft a token from this list &rarr;</a
 				>
 			</div>
-		</section>
+		</div>
 
-		<!-- Scout Report (News) -->
-		<section class="rounded-xl border border-border bg-surface px-3.5 py-3">
-			<div class="mb-2.5 flex items-center justify-between">
-				<h3 class="text-[11px] font-medium text-text-muted uppercase">Scout Report</h3>
-				<small class="text-[11px] text-text-muted">Live Feed</small>
-			</div>
+		<div class="min-w-0 flex-[1_1_340px] rounded-[20px] border border-border bg-surface p-[22px]">
+			<div class="mb-4.5 text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">Scout report</div>
 			{#if loading}
-				<p class="text-xs text-text-muted">Loading news...</p>
+				<p class="text-xs text-text-muted">Loading news…</p>
 			{:else if news.length === 0}
 				<p class="text-xs text-text-muted">No news available.</p>
 			{:else}
 				<div class="flex flex-col divide-y divide-border">
 					{#each news as item, i (i)}
-						<div class="flex gap-2 py-2">
+						<div class="flex gap-2.5 py-2.5">
 							<div class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"></div>
-							<div>
-								<p class="text-[13px] leading-snug font-medium text-text">
-									{item.title ?? 'Market update'}
-								</p>
+							<div class="min-w-0">
+								<p class="text-[13px] leading-snug font-bold">{item.title ?? 'Market update'}</p>
 								<p class="text-[11px] text-text-muted">
 									{item.source ?? 'SoSoValue'}{item.date ? ` · ${item.date}` : ''}
 								</p>
@@ -386,78 +363,81 @@
 					{/each}
 				</div>
 			{/if}
-		</section>
+		</div>
 	</div>
 
-	<section class="rounded-xl border border-border bg-surface px-3.5 py-3">
-		<div class="mb-3 flex items-center justify-between">
-			<h3 class="text-[11px] font-medium text-text-muted uppercase">My Contests</h3>
-			<div class="flex gap-1.5">
+	<div class="rounded-[20px] border border-border bg-surface p-[22px]">
+		<div class="mb-4.5 flex flex-wrap items-center justify-between gap-3">
+			<div class="text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">My contests</div>
+			<div class="flex gap-2">
 				<button
-					class="h-7 cursor-pointer rounded-lg border-0 bg-primary-muted px-3 text-[12px] font-medium text-primary"
+					class="cursor-pointer rounded-full bg-primary-muted px-3.5 py-1.5 text-xs font-bold text-primary-ink"
 					onclick={() => createContest('daily')}>+ Daily</button
 				>
 				<button
-					class="h-7 cursor-pointer rounded-lg border-0 bg-warning/15 px-3 text-[12px] font-medium text-warning"
+					class="cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-bold"
+					style="background:rgba(247,201,120,0.16);color:var(--color-warning-ink)"
 					onclick={() => createContest('weekly')}>+ Weekly</button
 				>
 				<button
-					class="h-7 cursor-pointer rounded-lg border-0 bg-positive/15 px-3 text-[12px] font-medium text-positive"
+					class="cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-bold"
+					style="background:rgba(104,194,168,0.14);color:var(--color-mint-ink)"
 					onclick={() => createContest('daily', 'paper')}>+ Practice</button
 				>
 			</div>
 		</div>
 		{#if actionError}
-			<p class="mb-2 text-[11px] text-negative">{actionError}</p>
+			<p class="mb-2.5 text-xs text-negative-ink">{actionError}</p>
 		{/if}
 		{#if loading}
-			<p class="text-xs text-text-muted">Loading...</p>
+			<p class="text-xs text-text-muted">Loading…</p>
 		{:else if contests.length === 0}
-			<p class="text-xs text-text-muted">No contests yet. Hit "New Draft" to start.</p>
+			<p class="text-xs text-text-muted">No contests yet — start a draft above.</p>
 		{:else}
 			<div class="flex flex-col divide-y divide-border">
 				{#each contests as c, i (c.id ?? i)}
-					<div class="flex items-center justify-between py-2.5">
-						<div class="flex items-center gap-2.5">
+					<div class="flex flex-wrap items-center justify-between gap-2.5 py-3">
+						<div class="flex flex-wrap items-center gap-2.5">
 							{#if c.status === 'resolved'}
-								<span class="rounded-full bg-hover px-2 py-0.5 text-[10px] font-medium text-text-secondary"
+								<span class="rounded-full bg-surface-alt px-2.5 py-1 text-[10px] font-bold text-text-muted uppercase"
 									>Resolved</span
 								>
 							{:else if c.status === 'live'}
-								<span class="rounded-full bg-positive/15 px-2 py-0.5 text-[10px] font-medium text-positive"
-									>Live</span
+								<span
+									class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase"
+									style="background:rgba(104,194,168,0.14);color:var(--color-mint-ink)">Live</span
 								>
 							{:else}
-								<span class="rounded-full bg-warning/15 px-2 py-0.5 text-[10px] font-medium text-warning"
-									>Open</span
+								<span
+									class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase"
+									style="background:rgba(247,201,120,0.16);color:var(--color-warning-ink)">Open</span
 								>
 							{/if}
-							<span class="text-[13px] text-text"
-								>{c.type === 'weekly' ? 'Weekly' : 'Daily'} Contest</span
-							>
+							<span class="text-[13px] font-bold">{c.type === 'weekly' ? 'Weekly' : 'Daily'} Contest</span>
 							{#if c.isPaper}
-								<span class="rounded-full bg-positive/15 px-2 py-0.5 text-[10px] font-medium text-positive"
-									>Practice</span
+								<span
+									class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase"
+									style="background:rgba(104,194,168,0.14);color:var(--color-mint-ink)">Practice</span
 								>
 							{/if}
-							<span class="text-[11px] text-text-muted">{String(c.id ?? '').slice(0, 8)}…</span>
+							<span class="font-mono text-[11px] text-text-muted">{String(c.id ?? '').slice(0, 8)}…</span>
 						</div>
 						{#if c.status === 'resolved'}
 							<a
 								href={`/contest/result?contestId=${c.id}`}
-								class="h-7 rounded-lg bg-primary-muted px-3 text-[12px] leading-7 font-medium text-primary no-underline"
-								>View Result</a
+								class="rounded-full bg-primary-muted px-3.5 py-1.5 text-xs font-bold text-primary-ink no-underline"
+								>View result</a
 							>
 						{:else}
 							<a
 								href={`/draft?contestId=${c.id}&type=${c.type ?? 'daily'}${c.isPaper ? '&mode=paper' : ''}`}
-								class="h-7 rounded-lg bg-primary px-3 text-[12px] leading-7 font-medium text-white no-underline"
-								>Continue Draft</a
+								class="rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-text no-underline"
+								>Continue draft</a
 							>
 						{/if}
 					</div>
 				{/each}
 			</div>
 		{/if}
-	</section>
+	</div>
 </div>

@@ -104,49 +104,51 @@
 	}
 </script>
 
-<div class="flex min-h-screen items-center justify-center bg-bg px-4">
-	<div class="w-full max-w-md rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">
-		{#if status === 'searching'}
-			<div class="mb-6 flex justify-center">
-				<div
-					class="h-16 w-16 animate-spin rounded-full border-4 border-primary-muted border-t-primary"
-				></div>
+<div class="mx-auto max-w-[720px] px-7 py-14">
+	{#if status === 'searching'}
+		<div class="hero-coral dot-grid relative flex min-h-[440px] flex-col justify-between overflow-hidden rounded-[24px] p-11">
+			<div class="pointer-events-none absolute top-[70px] right-[-70px] flex h-80 w-80 items-center justify-center">
+				<div class="anim-pulse absolute h-52 w-52 rounded-full border-2 border-[rgba(26,36,33,0.28)]"></div>
+				<div class="anim-pulse absolute h-52 w-52 rounded-full border-2 border-[rgba(26,36,33,0.28)]" style="animation-delay:0.85s"></div>
+				<div class="anim-pulse absolute h-52 w-52 rounded-full border-2 border-[rgba(26,36,33,0.28)]" style="animation-delay:1.7s"></div>
+				<div class="h-[74px] w-[74px] rounded-full bg-text"></div>
 			</div>
-			<h1 class="mb-2 text-xl font-semibold text-text">Finding your opponent...</h1>
-			<p class="mb-6 text-sm text-text-muted">Searching for a player with a similar skill level</p>
-			<div
-				class="mb-6 inline-flex items-center gap-2 rounded-full bg-hover px-4 py-2 text-sm font-medium text-text-secondary"
+			<div class="relative flex items-start justify-between">
+				<span
+					class="flex items-center gap-2 rounded-full bg-text px-3 py-1.5 font-mono text-[11px] font-bold tracking-[0.14em] text-primary uppercase"
+				>
+					<span class="anim-blink h-1.5 w-1.5 rounded-full bg-primary"></span>Searching
+				</span>
+			</div>
+			<div class="relative max-w-[9ch]">
+				<div class="text-[54px] leading-[0.94] font-black tracking-[-0.045em]">Finding your rival</div>
+				<p class="mt-4 max-w-[40ch] text-[15px] opacity-80">
+					Scanning live contests for a player at your skill level. After 30 seconds you'll be matched
+					with a bot opponent instead.
+				</p>
+			</div>
+			<div class="relative flex items-end justify-between gap-6">
+				<div class="font-mono text-[42px] leading-none font-bold tracking-[-0.03em]">{elapsedStr}</div>
+				<button
+					onclick={cancelSearch}
+					class="cursor-pointer rounded-full border-[1.5px] border-text bg-transparent px-[26px] py-3.5 text-sm font-bold text-text"
+				>
+					Cancel search
+				</button>
+			</div>
+		</div>
+	{:else if status === 'matched'}
+		<div class="hero-coral dot-grid flex min-h-[300px] flex-col justify-between rounded-[24px] p-11">
+			<span
+				class="w-fit rounded-full bg-text px-3 py-1.5 font-mono text-[11px] font-bold tracking-[0.14em] text-primary uppercase"
+				>Matched</span
 			>
-				<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-					<circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-				</svg>
-				{elapsedStr}
+			<div>
+				<div class="text-[44px] leading-none font-black tracking-[-0.045em]">Opponent found</div>
+				<p class="mt-3 text-[15px] opacity-80">Redirecting to the draft…</p>
 			</div>
-			<p class="mb-6 text-xs text-text-muted">After 30s, you'll be matched with a bot opponent</p>
-			<button
-				onclick={cancelSearch}
-				class="w-full rounded-xl border border-border py-3 text-sm font-semibold text-text-secondary transition-colors hover:bg-hover"
-			>
-				Cancel
-			</button>
-		{:else if status === 'matched'}
-			<div class="mb-6 flex justify-center">
-				<div class="flex h-16 w-16 items-center justify-center rounded-full bg-positive/15">
-					<svg
-						class="h-8 w-8 text-positive"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-						stroke-width="2.5"
-					>
-						<polyline points="20 6 9 17 4 12" />
-					</svg>
-				</div>
-			</div>
-			<h1 class="mb-2 text-xl font-semibold text-text">Opponent found!</h1>
-			<p class="mb-6 text-sm text-text-muted">Redirecting to draft...</p>
-		{/if}
-	</div>
+		</div>
+	{/if}
 </div>
 
 <Toast />
