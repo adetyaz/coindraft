@@ -6,8 +6,7 @@
 	import { SiweMessage } from 'siwe';
 	import bs58 from 'bs58';
 
-	let { user }: { user: { xpTotal?: number | null; username?: string | null } | null } =
-		$props();
+	let { user }: { user: { xpTotal?: number | null; username?: string | null } | null } = $props();
 
 	const appkitReady = Boolean(appKit);
 	let authInFlight = $state(false);
@@ -273,16 +272,26 @@
 	});
 </script>
 
-<nav class="sticky top-0 z-50 flex items-center justify-between gap-6 border-b border-border bg-surface px-7 py-3.5">
+<nav
+	class="sticky top-0 z-50 flex items-center justify-between gap-6 border-b border-border bg-surface px-7 py-3.5"
+>
 	<a href="/" class="flex shrink-0 items-center gap-2.5 no-underline">
-		<span class="relative h-6 w-6 shrink-0">
-			<span
-				class="absolute inset-0 rounded-md bg-primary shadow-[0_0_22px_rgba(247,142,121,0.55)]"
-				style="transform:rotate(45deg)"
-			></span>
-			<span class="absolute top-2 left-2 h-2 w-2 rounded-[2px] bg-text" style="transform:rotate(45deg)"
-			></span>
-		</span>
+		<svg
+			class="h-6 w-6 shrink-0 drop-shadow-[0_0_14px_rgba(247,142,121,0.45)]"
+			viewBox="0 0 24 24"
+			fill="none"
+			aria-hidden="true"
+		>
+			<circle cx="12" cy="12" r="11" class="fill-text" />
+			<polyline
+				points="6,14.5 9.5,10.5 12,12.5 17.5,6.5"
+				stroke="var(--color-surface)"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			/>
+			<circle cx="17.5" cy="6.5" r="1.8" class="fill-primary" />
+		</svg>
 		<span class="text-[19px] font-black tracking-[-0.03em] text-text">CoinDraft</span>
 	</a>
 
@@ -362,7 +371,8 @@
 
 	<div class="flex shrink-0 items-center gap-2.5">
 		{#if user}
-			<span class="font-mono text-xs whitespace-nowrap text-text-muted">{user.xpTotal ?? 0} XP</span>
+			<span class="font-mono text-xs whitespace-nowrap text-text-muted">{user.xpTotal ?? 0} XP</span
+			>
 			<a
 				href="/profile"
 				class="grid h-8 w-8 place-items-center rounded-full border border-border bg-surface-alt no-underline transition hover:border-primary"
