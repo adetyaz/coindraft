@@ -2,7 +2,11 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { SECTORS } from '$lib/constants';
 	import { sectorTheme } from '$lib/sectorTheme';
+	import { classifySector } from '$lib/sectors';
 	import Toast from '$lib/components/Toast.svelte';
+	import DraftAgent from '$lib/components/DraftAgent.svelte';
+	import TokenIcon from '$lib/components/TokenIcon.svelte';
+	import TokenHover from '$lib/components/TokenHover.svelte';
 	import { toast } from '$lib/toast';
 
 	type Token = {
@@ -27,6 +31,53 @@
 	// ── State ──────────────────────────────────────────────────────────
 	let contestId = $state('');
 	let lobbyId = $state('');
+
+	// Token hover overlay (G-07). Anchored to the hovered card's rect so the
+	// overlay can place itself beside it and flip near the viewport edge.
+	let hoverToken = $state<{ currencyId: string; symbol: string } | null>(null);
+	let hoverRect = $state<DOMRect | null>(null);
+	// Now that the overlay is clickable (Stats/News tabs), leaving the card
+	// can't close it immediately — the mouse has to cross the gap to the
+	// overlay itself first. Close is delayed and cancellable so hovering
+	// either the card OR the overlay keeps it open; it only actually closes
+	// once the pointer has left both.
+	let closeTimer: ReturnType<typeof setTimeout> | null = null;
+
+	function openHover(e: MouseEvent, currencyId: string, symbol: string) {
+		if (closeTimer) {
+			clearTimeout(closeTimer);
+			closeTimer = null;
+		}
+		hoverRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		hoverToken = { currencyId, symbol };
+	}
+	function scheduleCloseHover() {
+		if (closeTimer) clearTimeout(closeTimer);
+		closeTimer = setTimeout(() => {
+			hoverToken = null;
+			hoverRect = null;
+			closeTimer = null;
+		}, 150);
+	}
+	function cancelCloseHover() {
+		if (closeTimer) {
+			clearTimeout(closeTimer);
+			closeTimer = null;
+		}
+	}
+	function closeHover() {
+		cancelCloseHover();
+		hoverToken = null;
+		hoverRect = null;
+	}
+
+	// The anchor rect is captured once, so any scroll invalidates it. Dismissing
+	// is better than letting the overlay drift away from its card.
+	$effect(() => {
+		if (!hoverToken) return;
+		window.addEventListener('scroll', closeHover, { passive: true, once: true });
+		return () => window.removeEventListener('scroll', closeHover);
+	});
 	let tokens = $state<Token[]>([]);
 	let sectorChanges = $state<Map<string, number | null>>(new Map());
 	let lineup = $state<Pick[]>([]);
@@ -41,6 +92,7 @@
 	let highlightId = $state('');
 	let contestType = $state<'daily' | 'weekly'>('daily');
 	let isPaper = $state(false);
+	let sectorRestriction = $state<string | null>(null);
 
 	// ── Lifecycle ──────────────────────────────────────────────────────
 	onMount(() => {
@@ -64,8 +116,17 @@
 		loading = true;
 		loadError = '';
 		try {
+			if (lobbyId) {
+				const lRes = await fetch(`/api/lobby/${lobbyId}`);
+				if (lRes.ok) {
+					const lobbyInfo = await lRes.json();
+					sectorRestriction = lobbyInfo.sectorRestriction ?? null;
+				}
+			}
+
+			const tokensUrl = sectorRestriction ? `/api/tokens?sector=${sectorRestriction}` : '/api/tokens';
 			const [tRes, sRes, meRes] = await Promise.all([
-				fetch('/api/tokens'),
+				fetch(tokensUrl),
 				fetch('/api/sectors'),
 				fetch('/api/me')
 			]);
@@ -75,6 +136,10 @@
 				const match = tokens.find((t) => t.currency_id === highlightId);
 				if (match?.symbol) {
 					search = match.symbol;
+					// The pool is now sector-filtered by activeSector — without this,
+					// a highlighted token outside the default L1 tab would search for
+					// nothing found.
+					activeSector = tokenSector(match);
 					queueMicrotask(() =>
 						document.getElementById('token-pool')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 					);
@@ -101,10 +166,17 @@
 	// ── Derived ────────────────────────────────────────────────────────
 	const tokenMap = $derived(new Map(tokens.map((t) => [t.currency_id, t])));
 
+	function tokenSector(t: { symbol?: string }): string {
+		return classifySector([t.symbol ?? '']);
+	}
+
+	// Only Wildcard accepts any chain — every other slot only shows/accepts
+	// tokens actually classified into that sector.
 	const filteredTokens = $derived.by(() => {
 		const q = search.trim().toLowerCase();
-		if (!q) return tokens.slice(0, 50);
-		return tokens
+		const inSector = activeSector === 'wildcard' ? tokens : tokens.filter((t) => tokenSector(t) === activeSector);
+		if (!q) return inSector.slice(0, 50);
+		return inSector
 			.filter((t) => t.symbol?.toLowerCase().includes(q) || t.name?.toLowerCase().includes(q))
 			.slice(0, 50);
 	});
@@ -153,6 +225,12 @@
 			toast(`${sym} is already in your lineup`, 'error');
 			return;
 		}
+		// Belt-and-suspenders: filteredTokens already excludes mismatches, but
+		// this guards any other path that could call addToken directly.
+		if (activeSector !== 'wildcard' && tokenSector(token) !== activeSector) {
+			toast(`${sym} doesn't belong in the ${SECTORS.find((s) => s.id === activeSector)?.name} slot`, 'error');
+			return;
+		}
 		lineup = [
 			...lineup.filter((p) => p.sector !== activeSector),
 			{
@@ -170,6 +248,17 @@
 	function removePick(sectorId: string) {
 		lineup = lineup.filter((p) => p.sector !== sectorId);
 		activeSector = sectorId;
+	}
+
+	const emptySectors = $derived(SECTORS.filter((s) => !lineup.some((p) => p.sector === s.id)).map((s) => s.id));
+
+	// Applies AI Draft Agent picks the same way a manual click would — normal
+	// draft flow (addToken/removePick above) is completely unchanged, this is
+	// purely additive.
+	function applyAgentPicks(picks: { sector: string; symbol: string; name: string; currencyId: string }[]) {
+		for (const p of picks) {
+			lineup = [...lineup.filter((x) => x.sector !== p.sector), p];
+		}
 	}
 
 	function fmtChg(v: number | null): string {
@@ -233,7 +322,9 @@
 				const errData = await r2.json().catch(() => ({}));
 				throw new Error((errData as { error?: string }).error ?? 'Failed to submit lineup');
 			}
-			window.location.href = `/contest/result?contestId=${contestId}`;
+			// Goes to the game, not the result. Landing on the result page straight
+			// from a lock is what used to settle contests seconds after they began.
+			window.location.href = `/game/${contestId}`;
 		} catch (e) {
 			toast(e instanceof Error ? e.message : 'Submit failed', 'error');
 		} finally {
@@ -257,15 +348,20 @@
 					: contestType === 'weekly'
 						? 'Weekly Contest · 7D · 2× XP'
 						: 'Head-to-head'}
-				{#if isPaper}&middot; Practice mode{/if}
+				{#if isPaper}&middot; Scrimmage{/if}
+				{#if sectorRestriction}&middot; {sectorRestriction.toUpperCase()}-only tournament{/if}
 			</div>
 			<h1 class="text-[40px] leading-none font-black tracking-[-0.04em] sm:text-[46px]">
 				Build your lineup
 			</h1>
 			<p class="mt-2 text-sm text-text-muted">
-				{lobbyId
-					? 'One token per sector · you place against the whole room, not one opponent'
-					: `One token per sector · scoring runs ${contestType === 'weekly' ? '7 days' : '24h'} from lock`}
+				{#if sectorRestriction}
+					Only {sectorRestriction.toUpperCase()} tokens are in the pool for this tournament
+				{:else if lobbyId}
+					One token per sector · you place against the whole room, not one opponent
+				{:else}
+					One token per sector · scoring runs {contestType === 'weekly' ? '7 days' : '24h'} from lock
+				{/if}
 			</p>
 		</div>
 		<div class="flex items-center gap-2.5 rounded-full border border-border bg-surface px-[18px] py-2.5">
@@ -324,10 +420,10 @@
 						{#if pick}
 							{@const tkn = tokenMap.get(pick.currencyId)}
 							<div
-								class="grid h-[54px] w-[54px] place-items-center rounded-full text-[22px] font-black text-text"
+								class="grid h-[54px] w-[54px] place-items-center rounded-full"
 								style="background:{theme.color};box-shadow:0 0 26px {theme.color}66"
 							>
-								{pick.symbol.charAt(0).toUpperCase()}
+								<TokenIcon symbol={pick.symbol} size={38} bg="transparent" fg="var(--color-ink)" />
 							</div>
 							<div class="text-[17px] font-black tracking-[-0.02em]">{pick.symbol.toUpperCase()}</div>
 							<div class="font-mono text-[11px] text-text-muted">
@@ -429,6 +525,9 @@
 						{@const isHighlighted = token.currency_id === highlightId}
 						{@const activeTheme = sectorTheme(activeSector)}
 						<div
+							role="group"
+							onmouseenter={(e) => openHover(e, token.currency_id, token.symbol ?? '')}
+							onmouseleave={scheduleCloseHover}
 							class="rounded-[20px] p-4.5 transition-transform duration-200 hover:-translate-y-1.5"
 							style="background:{inLineup
 								? 'var(--color-primary-muted)'
@@ -438,10 +537,10 @@
 						>
 							<div class="mb-4 flex items-start justify-between gap-2.5">
 								<div
-									class="grid h-[46px] w-[46px] place-items-center rounded-full text-[19px] font-black text-text"
+									class="grid h-[46px] w-[46px] place-items-center rounded-full"
 									style="background:{activeTheme.color};box-shadow:0 0 24px {activeTheme.color}55"
 								>
-									{(token.symbol ?? '?').charAt(0).toUpperCase()}
+									<TokenIcon symbol={token.symbol} size={32} bg="transparent" fg="var(--color-ink)" />
 								</div>
 								{#if token.rank}
 									<span class="rounded-full bg-surface-alt px-2 py-1 text-[10px] font-bold text-text-muted"
@@ -519,7 +618,7 @@
 									<div class="h-9.5 w-9.5 shrink-0 rounded-[10px]" style="background:{t.color}29;border:1px solid {t.color}"></div>
 									<div>
 										<div class="text-sm font-extrabold">{t.label} &times;1.25</div>
-										<div class="text-xs text-text-muted">From Research Hub</div>
+										<div class="text-xs text-text-muted">From Knowledge Base</div>
 									</div>
 								</div>
 							{/each}
@@ -544,4 +643,15 @@
 	{/if}
 </div>
 
+{#if hoverToken}
+	<TokenHover
+		currencyId={hoverToken.currencyId}
+		symbol={hoverToken.symbol}
+		anchor={hoverRect}
+		onenter={cancelCloseHover}
+		onleave={scheduleCloseHover}
+	/>
+{/if}
+
 <Toast />
+<DraftAgent {emptySectors} {isPaper} onPicks={applyAgentPicks} />

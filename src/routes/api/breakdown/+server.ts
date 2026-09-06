@@ -1,7 +1,11 @@
 import { json } from '@sveltejs/kit';
-import { GROQ_API_KEY } from '$env/static/private';
 import { getNews } from '$lib/server/sosovalue';
-import Groq from 'groq-sdk';
+import {
+	createChatCompletion,
+	isInsufficientBalance,
+	AiConfigError,
+	activeBackend
+} from '$lib/server/aiCompute';
 
 interface Pick {
 	sector: string;
@@ -81,9 +85,7 @@ export async function POST({ request, cookies }) {
 	const prompt = buildPrompt(picks, status ?? 'MATCH ENDED', newsHeadlines);
 
 	try {
-		const groq = new Groq({ apiKey: GROQ_API_KEY });
-		const chat = await groq.chat.completions.create({
-			model: 'openai/gpt-oss-120b',
+		const chat = await createChatCompletion({
 			messages: [{ role: 'user', content: prompt }],
 			// gpt-oss is a reasoning model — it spends part of this budget on an
 			// internal reasoning trace before emitting real content. 150 was tuned
@@ -94,10 +96,23 @@ export async function POST({ request, cookies }) {
 		});
 
 		const text = chat.choices[0]?.message?.content?.trim() ?? '';
-		return json({ breakdown: text });
+		// Which backend answered, surfaced rather than assumed.
+		return json({ breakdown: text, via: activeBackend().via });
 	} catch (e: unknown) {
 		const message = e instanceof Error ? e.message : String(e);
 		console.error('[/api/breakdown]', message);
+		if (e instanceof AiConfigError) {
+			return json({ error: e.message, reason: 'ai_misconfigured' }, { status: 500 });
+		}
+		if (isInsufficientBalance(e)) {
+			return json(
+				{
+					error: 'The AI provider account is out of balance, so the breakdown is unavailable.',
+					reason: 'insufficient_balance'
+				},
+				{ status: 503 }
+			);
+		}
 		return json({ error: 'AI breakdown unavailable', detail: message }, { status: 502 });
 	}
 }

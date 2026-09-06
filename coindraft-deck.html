@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CoinDraft — Project Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+	:root {
+		--brand: #f78e79;
+		--brand-ink: #b04a32;
+		--brand-soft: #fdeae5;
+		--ink: #1d1917;
+		--ink-2: #57504a;
+		--ink-3: #8a827a;
+		--bg: #faf7f4;
+		--panel: #ffffff;
+		--line: #ece4de;
+		--mint: #68c2a8;
+		--blue: #5fa8d8;
+		--amber: #f7c978;
+		--red: #e87070;
+		--sky: #81bbe3;
+	}
+	* { margin: 0; padding: 0; box-sizing: border-box; }
+	html, body { height: 100%; }
+	body {
+		font-family: 'Archivo', sans-serif;
+		background: var(--bg);
+		color: var(--ink);
+		overflow: hidden;
+		-webkit-font-smoothing: antialiased;
+	}
+
+	/* ---------- deck chrome ---------- */
+	#progress {
+		position: fixed; top: 0; left: 0; height: 4px;
+		background: linear-gradient(90deg, var(--brand), var(--brand-ink));
+		width: 0%; z-index: 50; transition: width .45s cubic-bezier(.22,1,.36,1);
+		border-radius: 0 4px 4px 0;
+	}
+	#counter {
+		position: fixed; bottom: 28px; right: 36px; z-index: 50;
+		font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .12em;
+		color: var(--ink-3);
+	}
+	#counter b { color: var(--brand-ink); font-weight: 700; }
+	#hint {
+		position: fixed; bottom: 28px; left: 36px; z-index: 50;
+		font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .1em;
+		color: var(--ink-3); opacity: .7;
+	}
+	#hint kbd {
+		border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px;
+		background: #fff; font-family: inherit;
+	}
+
+	/* ---------- slides ---------- */
+	.slide {
+		position: fixed; inset: 0;
+		display: none;
+		padding: 84px 96px 96px;
+		flex-direction: column; justify-content: center;
+	}
+	.slide.active { display: flex; }
+	.slide.active .anim {
+		animation: rise .7s cubic-bezier(.22,1,.36,1) both;
+		animation-delay: calc(var(--i, 0) * 90ms);
+	}
+	@keyframes rise {
+		from { opacity: 0; transform: translateY(26px); }
+		to { opacity: 1; transform: translateY(0); }
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.slide.active .anim { animation: none; }
+		#progress { transition: none; }
+	}
+
+	/* dot-grid texture + glow */
+	.slide::before {
+		content: ''; position: absolute; inset: 0; pointer-events: none;
+		background-image: radial-gradient(rgba(29,25,23,.07) 1px, transparent 1px);
+		background-size: 26px 26px;
+		mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, #000 30%, transparent 75%);
+	}
+	.glow {
+		position: absolute; width: 640px; height: 640px; border-radius: 50%;
+		background: radial-gradient(circle, rgba(247,142,121,.22), transparent 65%);
+		pointer-events: none; filter: blur(10px);
+	}
+
+	/* ---------- type ---------- */
+	.kicker {
+		font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 500;
+		letter-spacing: .22em; text-transform: uppercase; color: var(--brand-ink);
+		display: flex; align-items: center; gap: 12px; margin-bottom: 22px;
+	}
+	.kicker::before { content: ''; width: 34px; height: 2px; background: var(--brand); border-radius: 2px; }
+	h1 {
+		font-size: clamp(56px, 7.2vw, 108px); font-weight: 900; letter-spacing: -.035em;
+		line-height: .96; margin-bottom: 28px;
+	}
+	h2 {
+		font-size: clamp(38px, 4.4vw, 62px); font-weight: 800; letter-spacing: -.03em;
+		line-height: 1.02; margin-bottom: 18px; max-width: 20ch;
+	}
+	.lede { font-size: clamp(17px, 1.5vw, 21px); color: var(--ink-2); max-width: 62ch; line-height: 1.55; }
+	.accent { color: var(--brand-ink); }
+	.mono { font-family: 'JetBrains Mono', monospace; }
+
+	/* ---------- components ---------- */
+	.grid { display: grid; gap: 18px; }
+	.card {
+		background: var(--panel); border: 1px solid var(--line); border-radius: 18px;
+		padding: 24px 26px; box-shadow: 0 1px 2px rgba(29,25,23,.04), 0 12px 32px -18px rgba(29,25,23,.12);
+		position: relative; overflow: hidden;
+	}
+	.card h3 { font-size: 19px; font-weight: 700; letter-spacing: -.01em; margin-bottom: 8px; }
+	.card p { font-size: 14.5px; color: var(--ink-2); line-height: 1.55; }
+	.card .tag {
+		font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .14em;
+		text-transform: uppercase; color: var(--brand-ink); margin-bottom: 12px; display: block;
+	}
+	.card .big { font-size: 34px; font-weight: 800; letter-spacing: -.02em; line-height: 1; margin-bottom: 6px; }
+	.card .topline { position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+
+	.pill {
+		display: inline-flex; align-items: center; gap: 8px;
+		border: 1px solid var(--line); background: #fff; border-radius: 999px;
+		padding: 8px 16px; font-size: 13.5px; font-weight: 600; color: var(--ink-2);
+	}
+	.pill .dot { width: 8px; height: 8px; border-radius: 50%; }
+	.chips { display: flex; flex-wrap: wrap; gap: 10px; }
+
+	.step { display: flex; gap: 20px; align-items: flex-start; }
+	.step .num {
+		font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 14px;
+		color: var(--brand-ink); background: var(--brand-soft);
+		border: 1px solid #f6cfc4; border-radius: 12px;
+		min-width: 46px; height: 46px; display: grid; place-items: center; flex-shrink: 0;
+	}
+	.step h3 { font-size: 19px; font-weight: 700; margin-bottom: 5px; letter-spacing: -.01em; }
+	.step p { font-size: 14.5px; color: var(--ink-2); line-height: 1.5; max-width: 56ch; }
+
+	.formula {
+		font-family: 'JetBrains Mono', monospace; font-size: clamp(20px, 2.4vw, 32px);
+		font-weight: 700; background: var(--ink); color: #fff; border-radius: 16px;
+		padding: 26px 34px; display: inline-block; letter-spacing: -.01em;
+		box-shadow: 0 18px 40px -16px rgba(29,25,23,.4);
+	}
+	.formula .hl { color: var(--brand); }
+
+	table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+	th {
+		text-align: left; font-family: 'JetBrains Mono', monospace; font-size: 11px;
+		letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3);
+		padding: 10px 14px; border-bottom: 2px solid var(--line); font-weight: 500;
+	}
+	td { padding: 11px 14px; border-bottom: 1px solid var(--line); color: var(--ink-2); }
+	td:first-child { font-weight: 600; color: var(--ink); }
+	tr:last-child td { border-bottom: none; }
+
+	.flow { display: flex; align-items: center; gap: 0; flex-wrap: wrap; }
+	.flow .node {
+		background: #fff; border: 1px solid var(--line); border-radius: 14px;
+		padding: 16px 20px; text-align: center; min-width: 150px;
+		box-shadow: 0 1px 2px rgba(29,25,23,.04);
+	}
+	.flow .node b { display: block; font-size: 15px; margin-bottom: 4px; }
+	.flow .node span { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-3); }
+	.flow .arrow {
+		font-family: 'JetBrains Mono', monospace; color: var(--brand-ink);
+		font-size: 20px; padding: 0 12px; font-weight: 700;
+	}
+
+	.status {
+		display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11px;
+		font-weight: 700; letter-spacing: .1em; padding: 4px 12px; border-radius: 999px;
+		text-transform: uppercase; vertical-align: middle; margin-left: 12px;
+	}
+	.status.done { background: #e3f4ee; color: #2c7a5f; }
+	.status.part { background: #fdf3e3; color: #9a6a1b; }
+	.status.plan { background: var(--brand-soft); color: var(--brand-ink); }
+
+	.sector-dot { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+
+	.title-foot {
+		display: flex; gap: 10px; flex-wrap: wrap; margin-top: 42px;
+	}
+
+	.big-quote {
+		font-size: clamp(26px, 3vw, 40px); font-weight: 700; letter-spacing: -.02em;
+		line-height: 1.25; max-width: 26ch;
+	}
+	.big-quote em { font-style: normal; color: var(--brand-ink); }
+
+	.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+	.stack-list { display: flex; flex-direction: column; gap: 0; }
+	.stack-list .row {
+		display: flex; justify-content: space-between; align-items: center; gap: 16px;
+		padding: 13px 4px; border-bottom: 1px solid var(--line); font-size: 15.5px;
+	}
+	.stack-list .row:last-child { border-bottom: none; }
+	.stack-list .row b { font-weight: 700; letter-spacing: -.01em; }
+	.stack-list .row span { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--ink-3); text-align: right; }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="counter"><b>01</b> / 16</div>
+<div id="hint"><kbd>←</kbd> <kbd>→</kbd> navigate &nbsp;·&nbsp; <kbd>F</kbd> fullscreen</div>
+
+<!-- ============ 1 · TITLE ============ -->
+<section class="slide">
+	<div class="glow" style="top:-220px; right:-160px;"></div>
+	<div class="anim" style="--i:0">
+		<div class="chips" style="margin-bottom:34px">
+			<span class="pill"><span class="dot" style="background:var(--brand)"></span>SoSoValue Buildathon</span>
+			<span class="pill"><span class="dot" style="background:var(--mint)"></span>Live on Vercel</span>
+			<span class="pill"><span class="dot" style="background:var(--blue)"></span>SvelteKit · TypeScript</span>
+		</div>
+	</div>
+	<h1 class="anim" style="--i:1">Coin<span class="accent">Draft</span></h1>
+	<p class="lede anim" style="--i:2; font-size:clamp(19px,1.8vw,24px); max-width:56ch">
+		Fantasy sports meets crypto research — draft token lineups, compete head-to-head,
+		and get smarter with every match through AI-powered market insights.
+	</p>
+	<div class="title-foot anim" style="--i:3">
+		<span class="pill mono" style="font-size:12px">PRD v1.0 · May 2026</span>
+		<span class="pill mono" style="font-size:12px">Wave 3 · Platform Polish</span>
+		<span class="pill mono" style="font-size:12px">Wallet-first · No email, no password</span>
+	</div>
+</section>
+
+<!-- ============ 2 · THE PITCH ============ -->
+<section class="slide">
+	<div class="glow" style="bottom:-260px; left:-200px;"></div>
+	<div class="kicker anim" style="--i:0">The Pitch</div>
+	<p class="big-quote anim" style="--i:1">The data is <em>real</em>. The game is <em>simple</em>.
+		Every result <em>teaches you something</em> about the market.</p>
+	<div class="grid anim" style="--i:2; grid-template-columns:repeat(3,1fr); margin-top:52px; max-width:1050px">
+		<div class="card"><div class="topline" style="background:var(--brand)"></div>
+			<span class="tag">Principle 01</span><h3>Research is the cheat code</h3>
+			<p>Live SoSoValue market context is woven into the game itself — scouting the dashboard genuinely makes you a better player.</p></div>
+		<div class="card"><div class="topline" style="background:var(--mint)"></div>
+			<span class="tag">Principle 02</span><h3>Points first</h3>
+			<p>Every action pays out in XP, streaks and badges. The feedback loop is instant, legible, and worth coming back for daily.</p></div>
+		<div class="card"><div class="topline" style="background:var(--blue)"></div>
+			<span class="tag">Principle 03</span><h3>A game, not a fintech dashboard</h3>
+			<p>Playful fantasy-sports energy with dense data at low cognitive load — five picks, one winner, zero jargon walls.</p></div>
+	</div>
+</section>
+
+<!-- ============ 3 · GAME LOOP ============ -->
+<section class="slide">
+	<div class="kicker anim" style="--i:0">Core Loop</div>
+	<h2 class="anim" style="--i:1">Wallet in. Five picks.<br/>One winner.</h2>
+	<div class="stack-list anim" style="--i:2; margin-top:34px; max-width:900px; gap:22px; display:flex; flex-direction:column">
+		<div class="step"><span class="num">01</span><div><h3>Connect &amp; sign</h3><p>EVM or Solana wallet via Reown AppKit. Sign one message — you're in. Session cookie, 7 days, no accounts.</p></div></div>
+		<div class="step"><span class="num">02</span><div><h3>Scout the dashboard</h3><p>Sector performance, IBIT whale-flow alerts, hot tokens, news — real SoSoValue data as pre-draft intel.</p></div></div>
+		<div class="step"><span class="num">03</span><div><h3>Draft five tokens</h3><p>Exactly one pick per sector — L1, L2, DeFi, Meme, Wildcard — from a live top-30 token feed with real prices.</p></div></div>
+		<div class="step"><span class="num">04</span><div><h3>Lock &amp; go live</h3><p>Entry prices snapshotted at lock time. The contest window runs 24h (daily) or 7 days (weekly).</p></div></div>
+		<div class="step"><span class="num">05</span><div><h3>Resolve &amp; learn</h3><p>Exit prices scored, winner paid XP, and Groq writes a 2–3 sentence post-match breakdown of your lineup.</p></div></div>
+	</div>
+</section>
+
+<!-- ============ 4 · DRAFT RULES ============ -->
+<section class="slide">
+	<div class="glow" style="top:-200px; left:38%;"></div>
+	<div class="kicker anim" style="--i:0">The Draft</div>
+	<h2 class="anim" style="--i:1">Five sectors. Five picks.<br/>No hiding.</h2>
+	<p class="lede anim" style="--i:2">One token per sector forces range — you can't just stack five L1s and call it research.</p>
+	<div class="grid anim" style="--i:3; grid-template-columns:repeat(5,1fr); margin-top:44px; max-width:1150px">
+		<div class="card" style="text-align:center"><span class="sector-dot" style="background:var(--mint)"></span><h3 style="margin-top:14px">L1</h3><p>Base-layer majors</p></div>
+		<div class="card" style="text-align:center"><span class="sector-dot" style="background:var(--blue)"></span><h3 style="margin-top:14px">L2</h3><p>Scaling plays</p></div>
+		<div class="card" style="text-align:center"><span class="sector-dot" style="background:var(--amber)"></span><h3 style="margin-top:14px">DeFi</h3><p>Protocols &amp; yield</p></div>
+		<div class="card" style="text-align:center"><span class="sector-dot" style="background:var(--brand)"></span><h3 style="margin-top:14px">Meme</h3><p>Pure volatility</p></div>
+		<div class="card" style="text-align:center"><span class="sector-dot" style="background:var(--sky)"></span><h3 style="margin-top:14px">Wildcard</h3><p>Anything goes</p></div>
+	</div>
+	<div class="chips anim" style="--i:4; margin-top:34px">
+		<span class="pill">Pool: live top-30 feed from <span class="mono" style="font-size:12px">/api/tokens</span></span>
+		<span class="pill">Active boosts flag a sector <b>⚡ 1.25×</b> on the projected preview</span>
+		<span class="pill">Daily 24h · Weekly 7d</span>
+	</div>
+</section>
+
+<!-- ============ 5 · SCORING ============ -->
+<section class="slide">
+	<div class="kicker anim" style="--i:0">Scoring</div>
+	<h2 class="anim" style="--i:1">Dead simple. Fully transparent.</h2>
+	<div class="anim" style="--i:2; margin:30px 0 10px">
+		<div class="formula">score = max(0, 50 + <span class="hl">clamp(pctChange, −100, +200)</span> / 2)</div>
+	</div>
+	<div class="two-col anim" style="--i:3; margin-top:26px; max-width:1050px">
+		<div class="card">
+			<table>
+				<tr><th>24h move</th><th>Pick score</th></tr>
+				<tr><td>−100% (floor)</td><td>0 pts</td></tr>
+				<tr><td>Flat 0%</td><td>50 pts</td></tr>
+				<tr><td>+50%</td><td>75 pts</td></tr>
+				<tr><td>+100%</td><td>100 pts</td></tr>
+			</table>
+		</div>
+		<div>
+			<div class="card" style="margin-bottom:16px"><span class="tag">Payouts</span>
+				<p><b style="color:var(--ink)">Win</b> → +250 XP &nbsp;·&nbsp; <b style="color:var(--ink)">Loss</b> → +60 XP &nbsp;·&nbsp; <b style="color:var(--ink)">Weekly</b> → 2×</p>
+				<p style="margin-top:8px">Streaks increment on wins, reset on losses. League wins pay +3 pts.</p></div>
+			<p style="font-size:13.5px; color:var(--ink-3); line-height:1.6">
+				Source: <span class="mono">src/lib/server/scoring.ts</span>. Entry &amp; exit prices are live
+				SoSoValue market snapshots captured at lock and at resolution.</p>
+		</div>
+	</div>
+</section>
+
+<!-- ============ 6 · TECH STACK ============ -->
+<section class="slide">
+	<div class="glow" style="bottom:-240px; right:-180px;"></div>
+	<div class="kicker anim" style="--i:0">Stack</div>
+	<h2 class="anim" style="--i:1">Modern, typed, ship-fast.</h2>
+	<div class="two-col anim" style="--i:2; margin-top:24px; max-width:1100px; gap:40px">
+		<div class="card"><div class="stack-list">
+			<div class="row"><b>Svelte 5.55</b><span>runes mode enforced · SSR off</span></div>
+			<div class="row"><b>SvelteKit 2.57</b><span>Vite 8 · adapter-vercel 6.3</span></div>
+			<div class="row"><b>TypeScript 6</b><span>strict · bundler resolution</span></div>
+			<div class="row"><b>Tailwind CSS 4.2</b><span>CSS-first @theme tokens</span></div>
+		</div></div>
+		<div class="card"><div class="stack-list">
+			<div class="row"><b>Drizzle 0.45 + Neon</b><span>serverless Postgres · 14 tables</span></div>
+			<div class="row"><b>Reown AppKit 1.8.19</b><span>wagmi 3.6 · viem 2.48 · Solana adapter</span></div>
+			<div class="row"><b>siwe 3.0 / tweetnacl + bs58</b><span>EVM SIWE · ed25519 verify</span></div>
+			<div class="row"><b>groq-sdk 1.1</b><span>llama-3.3-70b-versatile</span></div>
+		</div></div>
+	</div>
+	<p class="anim mono" style="--i:3; margin-top:26px; font-size:12.5px; color:var(--ink-3)">
+		+ @tanstack/svelte-query 6.1 · @neondatabase/serverless 1.0 · deployed on Vercel
+	</p>
+</section>
+
+<!-- ============ 7 · ARCHITECTURE ============ -->
+<section class="slide">
+	<div class="kicker anim" style="--i:0">Architecture</div>
+	<h2 class="anim" style="--i:1">Thin client. Serious server.</h2>
+	<div class="flow anim" style="--i:2; margin-top:38px">
+		<div class="node"><b>Browser</b><span>src/lib · pages</span></div><span class="arrow">→</span>
+		<div class="node"><b>~40 API routes</b><span>src/routes/api</span></div><span class="arrow">→</span>
+		<div class="node"><b>Server lib</b><span>$lib/server · 12 modules</span></div><span class="arrow">→</span>
+		<div class="node"><b>Neon Postgres</b><span>Drizzle ORM</span></div>
+	</div>
+	<div class="grid anim" style="--i:3; grid-template-columns:repeat(3,1fr); margin-top:38px; max-width:1100px">
+		<div class="card"><span class="tag">Client</span><h3>src/lib</h3>
+			<p>AppKit singleton (EVM 7 networks + Solana Phantom/Solflare), game constants, badges, sector theming, UI primitives. Keys never touch the browser.</p></div>
+		<div class="card"><span class="tag">Server-only</span><h3>src/lib/server</h3>
+			<p>auth, sosovalue, scoring, contest-resolution, matchmaking, lobby-matchmaking, gauntlet, sodex, resultCard — SvelteKit blocks client imports.</p></div>
+		<div class="card"><span class="tag">Ops</span><h3>Crons</h3>
+			<p><span class="mono" style="font-size:12.5px">/api/gauntlet/seed</span> daily 00:00 and <span class="mono" style="font-size:12.5px">/api/cron/resolve-all</span> 00:05 via vercel.json — unattended resolution.</p></div>
+	</div>
+</section>
+
+<!-- ============ 8 · AUTH ============ -->
+<section class="slide">
+	<div class="glow" style="top:-180px; right:10%;"></div>
+	<div class="kicker anim" style="--i:0">Auth</div>
+	<h2 class="anim" style="--i:1">The wallet <span class="accent">is</span> the account.</h2>
+	<div class="flow anim" style="--i:2; margin-top:40px">
+		<div class="node"><b>Connect</b><span>Reown AppKit</span></div><span class="arrow">→</span>
+		<div class="node"><b>GET nonce</b><span>5-min cookie</span></div><span class="arrow">→</span>
+		<div class="node"><b>Sign</b><span>SIWE · ed25519</span></div><span class="arrow">→</span>
+		<div class="node"><b>Verify + upsert</b><span>player_XXXXXX</span></div><span class="arrow">→</span>
+		<div class="node"><b>Session</b><span>httpOnly · 7d</span></div>
+	</div>
+	<div class="grid anim" style="--i:3; grid-template-columns:repeat(3,1fr); margin-top:40px; max-width:1100px">
+		<div class="card"><div class="topline" style="background:var(--blue)"></div><h3>EVM</h3><p>EIP-4361 Sign-In with Ethereum via <span class="mono" style="font-size:13px">SiweMessage.verify()</span>. Mainnet, Sepolia, Arbitrum, Base, Polygon, Optimism.</p></div>
+		<div class="card"><div class="topline" style="background:var(--brand)"></div><h3>Solana</h3><p><span class="mono" style="font-size:13px">nacl.sign.detached.verify</span> over a bs58-decoded signature. Phantom &amp; Solflare supported.</p></div>
+		<div class="card"><div class="topline" style="background:var(--mint)"></div><h3>Hardened</h3><p>sameSite strict, nonce deleted after use, route guard redirects to <span class="mono" style="font-size:13px">/?auth=required</span>, auto-retry on AppKit init.</p></div>
+	</div>
+</section>
+
+<!-- ============ 9 · DATA ============ -->
+<section class="slide">
+	<div class="kicker anim" style="--i:0">Live Data</div>
+	<h2 class="anim" style="--i:1">SoSoValue, server-side only.</h2>
+	<p class="lede anim" style="--i:2">One API client with an in-memory cache, per-endpoint TTLs and retry-on-429 that honors <span class="mono" style="font-size:.9em">retry_after</span>.</p>
+	<div class="card anim" style="--i:3; margin-top:32px; max-width:1000px">
+		<table>
+			<tr><th>Endpoint</th><th>Powers</th><th>Cache TTL</th></tr>
+			<tr><td class="mono" style="font-weight:500; font-size:13px">/currencies</td><td>Token universe</td><td class="mono">24h</td></tr>
+			<tr><td class="mono" style="font-weight:500; font-size:13px">/currencies/sector-spotlight</td><td>Sector performance board</td><td class="mono">5min</td></tr>
+			<tr><td class="mono" style="font-weight:500; font-size:13px">/etfs/summary-history</td><td>IBIT whale-flow alerts (≥3-day streaks)</td><td class="mono">5min</td></tr>
+			<tr><td class="mono" style="font-weight:500; font-size:13px">/news/featured</td><td>News feed + AI context</td><td class="mono">15min</td></tr>
+			<tr><td class="mono" style="font-weight:500; font-size:13px">/currencies/{id}/market-snapshot</td><td>Entry/exit pricing · draft pool</td><td class="mono">60s</td></tr>
+		</table>
+	</div>
+	<p class="anim" style="--i:4; margin-top:22px; font-size:13.5px; color:var(--ink-3)">
+		Rate budget: 20 req/min · 100k/month. SoDEX market data currently passes through the same backend — real on-chain Trading API integration is a documented TODO.</p>
+</section>
+
+<!-- ============ 10 · AI LAYER ============ -->
+<section class="slide">
+	<div class="glow" style="bottom:-220px; left:30%;"></div>
+	<div class="kicker anim" style="--i:0">AI Layer</div>
+	<h2 class="anim" style="--i:1">Groq <span class="mono" style="font-size:.55em; letter-spacing:0; color:var(--ink-3)">llama-3.3-70b-versatile</span>,<br/>twice.</h2>
+	<div class="two-col anim" style="--i:2; margin-top:32px; max-width:1100px; gap:24px">
+		<div class="card"><div class="topline" style="background:var(--brand)"></div>
+			<span class="tag">/api/breakdown · non-streaming</span>
+			<h3>Post-match analyst</h3>
+			<p>Per-pick sector, % move and points + up to 6 live headlines → a 2–3 sentence, max-80-word breakdown naming your hero and your villain, ending forward-looking. News failure is non-fatal.</p>
+		</div>
+		<div class="card"><div class="topline" style="background:var(--blue)"></div>
+			<span class="tag">/api/mentor · streaming</span>
+			<h3>AI Mentor chat</h3>
+			<p>Grounded in live sector performance, top-15 tokens and headlines. Speaks in exact uppercase tickers — the UI hot-links them straight into the draft screen.</p>
+		</div>
+	</div>
+	<div class="chips anim" style="--i:3; margin-top:30px">
+		<span class="pill mono" style="font-size:12px">temp 0.7 · 150 tok</span>
+		<span class="pill mono" style="font-size:12px">temp 0.6 · 400 tok · 8-msg history</span>
+		<span class="pill">Key never leaves <span class="mono" style="font-size:12px">$lib/server</span></span>
+	</div>
+</section>
+
+<!-- ============ 11 · ENGAGEMENT ============ -->
+<section class="slide">
+	<div class="kicker anim" style="--i:0">Retention Engine</div>
+	<h2 class="anim" style="--i:1">Built to bring you back tomorrow.</h2>
+	<div class="grid anim" style="--i:2; grid-template-columns:repeat(3,1fr); margin-top:36px; max-width:1150px">
+		<div class="card"><span class="tag">Daily Gauntlet</span><div class="big">+50 XP</div><p>One quiz question a day, self-seeded from live market data at midnight. A correct answer also grants a 24h ⚡ sector boost.</p></div>
+		<div class="card"><span class="tag">Research Hub</span><div class="big">+20 XP</div><p>Read one article a day, earn XP and another sector boost. Research literally is the cheat code.</p></div>
+		<div class="card"><span class="tag">Badges</span><div class="big">6 tiers</div><p>First Blood 🩸 · On Fire 🔥 · Unstoppable ⚡ · Veteran 🎖️ · Champion 🏆 · League Founder 👑</p></div>
+		<div class="card"><span class="tag">Leagues &amp; leaderboard</span><div class="big">Top 50</div><p>Global XP leaderboard with medals, plus private leagues at 3 pts per win.</p></div>
+		<div class="card"><span class="tag">Paper mode</span><div class="big">Risk-free</div><p>Practice contests vs bots with a separate XP track — no streak, badge or league impact.</p></div>
+		<div class="card"><span class="tag">Share cards</span><div class="big">SVG</div><p>Server-generated result cards at <span class="mono" style="font-size:12.5px">/api/contest/[id]/card</span>, wrapped by <span class="mono" style="font-size:12.5px">/share/[id]</span>.</p></div>
+	</div>
+</section>
+
+<!-- ============ 12 · MULTIPLAYER ============ -->
+<section class="slide">
+	<div class="glow" style="top:-200px; right:-120px;"></div>
+	<div class="kicker anim" style="--i:0">Wave 2 · Multiplayer</div>
+	<h2 class="anim" style="--i:1">Real opponents, three ways.</h2>
+	<div class="grid anim" style="--i:2; grid-template-columns:repeat(3,1fr); margin-top:38px; max-width:1150px">
+		<div class="card"><div class="topline" style="background:var(--mint)"></div><h3>Matchmaking queue</h3>
+			<p>Postgres-backed <span class="mono" style="font-size:13px">matchmaking_queue</span> pairs two queued players head-to-head, with a 30-second bot fallback so you never wait forever.</p></div>
+		<div class="card"><div class="topline" style="background:var(--amber)"></div><h3>Lobbies</h3>
+			<p>3+ player rooms — fixed sizes 4/6/8 or open creator-hosted — with their own queue, lineup and resolution pipeline.</p></div>
+		<div class="card"><div class="topline" style="background:var(--blue)"></div><h3>Synthetic bot</h3>
+			<p>Solo contests still resolve instantly against a calibrated bot score derived from yours. Eight bot personas exist, ready to be tokenized (see 0G).</p></div>
+	</div>
+	<p class="lede anim" style="--i:3; margin-top:36px; font-size:15.5px; color:var(--ink-3)">
+		Wave 2 also shipped: automatic contest resolution, Gauntlet auto-seeding, the AI Mentor, weekly-contest fix, and a full dead-code cleanup.</p>
+</section>
+
+<!-- ============ 13 · ROADMAP ============ -->
+<section class="slide">
+	<div class="kicker anim" style="--i:0">Roadmap</div>
+	<h2 class="anim" style="--i:1">Three waves in. Two ecosystems next.</h2>
+	<div class="stack-list anim" style="--i:2; margin-top:32px; max-width:1000px; display:flex; flex-direction:column; gap:14px">
+		<div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:20px">
+			<div><h3>Wave 1 — Core Loop</h3><p>Wallet auth · live market context · 5-token draft · resolution · AI breakdown</p></div>
+			<span class="status done">Shipped</span></div>
+		<div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:20px">
+			<div><h3>Wave 2 — Real Multiplayer</h3><p>Matchmaking · lobbies · cron resolution · AI Mentor · judge-feedback fixes</p></div>
+			<span class="status done">Shipped</span></div>
+		<div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:20px">
+			<div><h3>Wave 3 — Platform Polish</h3><p>Research Hub · badges · paper mode · share cards · self-seeding Gauntlet · mobile pass</p></div>
+			<span class="status part">6 / 8 built</span></div>
+		<div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:20px; border-style:dashed">
+			<div><h3>Deferred</h3><p>3.4 real-money prize pools (70/20/10 via SoDEX) · 3.5 responsible-play controls</p></div>
+			<span class="status plan">Needs payment infra</span></div>
+	</div>
+</section>
+
+<!-- ============ 14 · 0G ============ -->
+<section class="slide">
+	<div class="glow" style="bottom:-240px; right:15%;"></div>
+	<div class="kicker anim" style="--i:0">Integration · 0G</div>
+	<h2 class="anim" style="--i:1">Decentralized AI, behind a flag.</h2>
+	<p class="lede anim" style="--i:2">Scope locked 2026-08-23: <b style="color:var(--ink)">Phase 1 only</b> — point the two Groq routes at 0G's OpenAI-compatible Router (<span class="mono" style="font-size:.85em">router-api.0g.ai/v1</span>, TEE-signed inference) behind <span class="mono" style="font-size:.85em">USE_0G_COMPUTE</span>. Deadline Aug 30, 2026.</p>
+	<div class="grid anim" style="--i:3; grid-template-columns:repeat(4,1fr); margin-top:36px; max-width:1150px">
+		<div class="card"><span class="tag">Phase 1 · now</span><h3>Compute</h3><p>Swap Groq → 0G Router for Mentor + breakdown. Zero UI change.</p></div>
+		<div class="card" style="opacity:.75"><span class="tag">Phase 2 · deferred</span><h3>Agentic ID</h3><p>ERC-7857-tokenize the 8 bot personas with authorizeUsage.</p></div>
+		<div class="card" style="opacity:.75"><span class="tag">Phase 3 · deferred</span><h3>Storage</h3><p>Immutable post-resolution contest records on 0G Storage.</p></div>
+		<div class="card" style="opacity:.75"><span class="tag">Phase 4 · deferred</span><h3>0G Pay</h3><p>Prize-pool settlement layer. DA explicitly ruled out.</p></div>
+	</div>
+</section>
+
+<!-- ============ 15 · MIDNIGHT ============ -->
+<section class="slide">
+	<div class="kicker anim" style="--i:0">Integration · Midnight</div>
+	<h2 class="anim" style="--i:1">Private contests, zero-knowledge.</h2>
+	<p class="lede anim" style="--i:2">Midnight Buildathon (AKINDO, Aug–Nov 2026). Additive <b style="color:var(--ink)">"Private Contest"</b> mode on a separate branch — one commit-reveal <b style="color:var(--ink)">Compact</b> contract, three features:</p>
+	<div class="grid anim" style="--i:3; grid-template-columns:repeat(3,1fr); margin-top:34px; max-width:1100px">
+		<div class="card"><div class="topline" style="background:var(--sky)"></div><h3>Hidden lineups</h3><p>Your full five stays sealed until both players lock.</p></div>
+		<div class="card"><div class="topline" style="background:var(--brand)"></div><h3>Hidden Wildcard</h3><p>Just the Wildcard pick concealed — bluffing becomes a strategy.</p></div>
+		<div class="card"><div class="topline" style="background:var(--amber)"></div><h3>Hidden boosts</h3><p>Active ⚡ boosts stay private until resolution.</p></div>
+	</div>
+	<p class="anim" style="--i:4; margin-top:30px; font-size:13.5px; color:var(--ink-3); max-width:90ch">
+		Hard gate: ≥1 compiling Compact contract · public repo + deck + demo. Friction noted: Lace wallet (<span class="mono" style="font-size:12.5px">window.midnight</span>) sits outside Reown, and dev needs a local Docker proof server. Status: design-phase, nothing built yet.</p>
+</section>
+
+<!-- ============ 16 · CLOSE ============ -->
+<section class="slide">
+	<div class="glow" style="top:-200px; left:-160px;"></div>
+	<div class="glow" style="bottom:-260px; right:-140px;"></div>
+	<div class="kicker anim" style="--i:0">CoinDraft</div>
+	<h1 class="anim" style="--i:1; font-size:clamp(48px,6vw,92px)">Draft. Compete.<br/><span class="accent">Get smarter.</span></h1>
+	<p class="lede anim" style="--i:2; margin-top:8px">Real market data. Five picks. One winner. An AI that explains why.</p>
+	<div class="chips anim" style="--i:3; margin-top:44px">
+		<span class="pill"><span class="dot" style="background:var(--mint)"></span>Wave 1 &amp; 2 shipped</span>
+		<span class="pill"><span class="dot" style="background:var(--amber)"></span>Wave 3 · 6/8</span>
+		<span class="pill"><span class="dot" style="background:var(--blue)"></span>0G · Aug 30</span>
+		<span class="pill"><span class="dot" style="background:var(--brand)"></span>Midnight · next</span>
+	</div>
+	<p class="anim mono" style="--i:4; margin-top:56px; font-size:12px; color:var(--ink-3); letter-spacing:.14em">COINDRAFT · FANTASY SPORTS MEETS CRYPTO RESEARCH</p>
+</section>
+
+<script>
+	const slides = Array.from(document.querySelectorAll('.slide'));
+	const counter = document.getElementById('counter');
+	const progress = document.getElementById('progress');
+	let i = 0;
+
+	function show(n) {
+		i = Math.max(0, Math.min(slides.length - 1, n));
+		slides.forEach((s, k) => s.classList.toggle('active', k === i));
+		counter.innerHTML = '<b>' + String(i + 1).padStart(2, '0') + '</b> / ' + String(slides.length).padStart(2, '0');
+		progress.style.width = ((i + 1) / slides.length * 100) + '%';
+		history.replaceState(null, '', '#' + (i + 1));
+	}
+
+	document.addEventListener('keydown', (e) => {
+		if (['ArrowRight', 'ArrowDown', ' ', 'PageDown'].includes(e.key)) { e.preventDefault(); show(i + 1); }
+		else if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); show(i - 1); }
+		else if (e.key === 'Home') show(0);
+		else if (e.key === 'End') show(slides.length - 1);
+		else if (e.key === 'f' || e.key === 'F') {
+			document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+		}
+	});
+	document.addEventListener('click', (e) => {
+		if (e.clientX > window.innerWidth * 0.25) show(i + 1); else show(i - 1);
+	});
+	let touchX = null;
+	document.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+	document.addEventListener('touchend', (e) => {
+		if (touchX === null) return;
+		const dx = e.changedTouches[0].clientX - touchX;
+		if (Math.abs(dx) > 48) show(dx < 0 ? i + 1 : i - 1);
+		touchX = null;
+	}, { passive: true });
+
+	const start = parseInt((location.hash || '').slice(1), 10);
+	show(Number.isFinite(start) && start > 0 ? start - 1 : 0);
+</script>
+</body>
+</html>

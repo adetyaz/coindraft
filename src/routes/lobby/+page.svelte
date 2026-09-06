@@ -164,13 +164,13 @@
 			<div
 				class="mb-2.5 font-mono text-[11px] font-bold tracking-[0.14em] text-primary-ink uppercase"
 			>
-				Ranked lobby
+				Multiplayer
 			</div>
 			<h1 class="text-[40px] leading-none font-black tracking-[-0.04em]">
 				{#if view === 'menu'}Pick your lobby size{:else if view === 'quick-searching'}Building your
 					room{:else if view === 'browse'}Open lobbies{:else}Waiting room{/if}
 			</h1>
-			<p class="mt-2 max-w-[52ch] text-sm text-text-muted">
+			<p class="mt-2 text-sm text-text-muted">
 				Everyone drafts the same five sectors. You place against the whole room, not one opponent.
 			</p>
 		</div>

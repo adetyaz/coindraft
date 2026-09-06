@@ -3,11 +3,13 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import Gauntlet from '$lib/components/Gauntlet.svelte';
+	import TokenIcon from '$lib/components/TokenIcon.svelte';
 	import StatBlock from '$lib/components/ui/StatBlock.svelte';
 	import Bar from '$lib/components/ui/Bar.svelte';
 	import type { BadgeDef } from '$lib/badges';
 
 	let contests = $state<Array<Record<string, unknown>>>([]);
+	let myLobbies = $state<Array<Record<string, unknown>>>([]);
 	let badges = $state<(BadgeDef & { earned: boolean; earnedAt: string | null })[]>([]);
 	let sectors = $state<Array<Record<string, unknown>>>([]);
 	let alerts = $state<Array<Record<string, unknown>>>([]);
@@ -27,14 +29,19 @@
 
 	const user = $derived(page.data.user);
 	const resolvedContests = $derived(contests.filter((c) => c.status === 'resolved'));
-	const winCount = $derived(resolvedContests.filter((c) => c.winnerId === user?.id).length);
+	// Win rate is a competitive-skill number, so Scrimmage (bot-only, no real
+	// stakes) is excluded here — the "resolved" count above stays inclusive,
+	// since that's a general activity stat, not a skill claim (H-03).
+	const realResolvedContests = $derived(resolvedContests.filter((c) => !c.isPaper));
+	const winCount = $derived(realResolvedContests.filter((c) => c.winnerId === user?.id).length);
 	const winRate = $derived(
-		resolvedContests.length > 0 ? Math.round((winCount / resolvedContests.length) * 100) : 0
+		realResolvedContests.length > 0 ? Math.round((winCount / realResolvedContests.length) * 100) : 0
 	);
 
 	onMount(async () => {
 		await Promise.all([
 			loadContests(),
+			loadMyLobbies(),
 			loadSectors(),
 			loadAlerts(),
 			loadTokens(),
@@ -43,6 +50,15 @@
 		]);
 		loading = false;
 	});
+
+	async function loadMyLobbies() {
+		try {
+			const res = await fetch('/api/lobby/mine');
+			if (res.ok) myLobbies = await res.json();
+		} catch (error) {
+			console.error('Failed to load active lobbies:', error);
+		}
+	}
 
 	async function loadBadges() {
 		try {
@@ -107,7 +123,10 @@
 		}
 	}
 
-	async function createContest(type: 'daily' | 'weekly' = 'daily', mode: 'real' | 'paper' = 'real') {
+	async function createContest(
+		type: 'daily' | 'weekly' = 'daily',
+		mode: 'real' | 'paper' = 'real'
+	) {
 		actionError = '';
 		try {
 			const res = await fetch('/api/contests', {
@@ -153,10 +172,14 @@
 </script>
 
 <div class="mx-auto max-w-[1360px] px-7 pt-7 pb-18">
-	<div class="mb-4.5 flex flex-wrap gap-4.5">
-		<div class="hero-coral dot-grid flex min-w-0 flex-[1_1_520px] flex-col justify-between gap-7 rounded-[24px] p-9">
+	<div class="mb-4.5 flex flex-wrap items-start gap-4.5">
+		<div
+			class="hero-coral dot-grid flex min-w-0 flex-[1_1_520px] flex-col gap-7 rounded-[24px] p-9"
+		>
 			<div class="flex flex-wrap items-start justify-between gap-4">
-				<span class="rounded-full bg-text px-3 py-1.5 font-mono text-[11px] font-bold tracking-[0.14em] text-primary uppercase">
+				<span
+					class="rounded-full bg-text px-3 py-1.5 font-mono text-[11px] font-bold tracking-[0.14em] text-primary uppercase"
+				>
 					{resolvedContests.length > 0 ? `${winRate}% win rate` : 'New player'}
 				</span>
 				{#if contests.filter((c) => c.status !== 'resolved').length > 0}
@@ -166,10 +189,10 @@
 				{/if}
 			</div>
 			<div>
-				<div class="max-w-[14ch] text-[46px] leading-[0.95] font-black tracking-[-0.045em] max-sm:text-[34px]">
+				<div class="text-[46px] leading-[0.95] font-black tracking-[-0.045em] max-sm:text-[34px]">
 					{contests.length === 0 ? 'Draft your first lineup' : 'Ready for your next contest'}
 				</div>
-				<p class="mt-3.5 max-w-[46ch] text-[15px] opacity-80">
+				<p class="mt-3.5 text-[15px] opacity-80">
 					{contests.length === 0
 						? 'Five sectors, one token each, twenty-four hours to prove your read.'
 						: `${resolvedContests.length} contest${resolvedContests.length === 1 ? '' : 's'} resolved so far this season.`}
@@ -184,31 +207,46 @@
 				</button>
 				<button
 					class="cursor-pointer rounded-full border-[1.5px] border-text bg-transparent px-[26px] py-3.5 text-sm font-bold text-text"
+					onclick={() => goto('/tournament')}
+				>
+					Tournaments
+				</button>
+				<button
+					class="cursor-pointer rounded-full border-[1.5px] border-text bg-transparent px-[26px] py-3.5 text-sm font-bold text-text"
 					onclick={() => goto('/draft')}
 				>
 					Open draft
 				</button>
-				{#if contests.length === 0}
-					<button
-						class="cursor-pointer rounded-full border-[1.5px] border-text bg-transparent px-[26px] py-3.5 text-sm font-bold text-text"
-						onclick={() => createContest('daily', 'paper')}
-					>
-						Try practice mode
-					</button>
-				{/if}
+				<!-- Always shown, and routes to the Scrimmage page rather than creating a
+				     contest inline — so the duration choice applies here too. -->
+				<button
+					class="cursor-pointer rounded-full border-[1.5px] border-text bg-transparent px-[26px] py-3.5 text-sm font-bold text-text"
+					onclick={() => goto('/scrimmage')}
+				>
+					{contests.length === 0 ? 'Try Scrimmage' : 'Scrimmage'}
+				</button>
 			</div>
+			<p class="text-[13px] opacity-70">
+				Scrimmage — draft against bots and earn XP, without touching your real rank.
+			</p>
 		</div>
 
 		<div class="flex min-w-0 flex-[1_1_280px] flex-col gap-3.5">
-			<Gauntlet />
 			<div class="grid grid-cols-2 gap-4.5 rounded-[20px] border border-border bg-surface p-[22px]">
-				<StatBlock value={resolvedContests.length > 0 ? `${winRate}%` : '—'} label="Win rate" color="var(--color-mint-ink)" />
+				<StatBlock
+					value={resolvedContests.length > 0 ? `${winRate}%` : '—'}
+					label="Win rate"
+					color="var(--color-mint-ink)"
+				/>
 				<StatBlock value={String(resolvedContests.length)} label="Resolved" />
 			</div>
 		</div>
 	</div>
 
 	<div class="mb-4.5 flex flex-wrap gap-4.5">
+		<div class="min-w-0 flex-[1_1_340px]">
+			<Gauntlet />
+		</div>
 		<div class="min-w-0 flex-[1_1_340px] rounded-[20px] border border-border bg-surface p-[22px]">
 			<div class="mb-4.5 text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">
 				Sector performance
@@ -232,7 +270,8 @@
 							</div>
 							<span
 								class="w-12 text-right font-mono text-xs font-bold"
-								style="color:{chg >= 0 ? 'var(--color-mint-ink)' : 'var(--color-red-ink)'}">{formatPct(chg)}</span
+								style="color:{chg >= 0 ? 'var(--color-mint-ink)' : 'var(--color-red-ink)'}"
+								>{formatPct(chg)}</span
 							>
 						</div>
 					{/each}
@@ -243,7 +282,9 @@
 		<div class="min-w-0 flex-[1_1_340px] rounded-[20px] border border-border bg-surface p-[22px]">
 			<div class="mb-4.5 flex items-center gap-2">
 				<span class="anim-blink h-[7px] w-[7px] rounded-full bg-negative"></span>
-				<span class="text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">Whale flow</span>
+				<span class="text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase"
+					>Whale flow</span
+				>
 			</div>
 			{#if alerts.length === 0}
 				<p class="text-xs text-text-muted">No active alerts right now.</p>
@@ -267,8 +308,12 @@
 
 	<div class="mb-4.5 rounded-[20px] border border-border bg-surface p-[22px]">
 		<div class="mb-4.5 flex items-center justify-between">
-			<div class="text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">Badges</div>
-			<span class="font-mono text-xs text-text-muted">{badges.filter((b) => b.earned).length}/{badges.length} unlocked</span>
+			<div class="text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">
+				Badges
+			</div>
+			<span class="font-mono text-xs text-text-muted"
+				>{badges.filter((b) => b.earned).length}/{badges.length} unlocked</span
+			>
 		</div>
 		<div class="flex flex-wrap gap-2.5">
 			{#each badges as badge (badge.code)}
@@ -282,8 +327,9 @@
 					<span class="text-base {badge.earned ? '' : 'grayscale'}">{badge.emoji}</span>
 					<span
 						class="text-xs font-bold"
-						style={badge.earned ? 'color:var(--color-primary-ink)' : 'color:var(--color-text-muted)'}
-						>{badge.name}</span
+						style={badge.earned
+							? 'color:var(--color-primary-ink)'
+							: 'color:var(--color-text-muted)'}>{badge.name}</span
 					>
 				</div>
 			{/each}
@@ -293,7 +339,9 @@
 	<div class="mb-4.5 flex flex-wrap gap-4.5">
 		<div class="min-w-0 flex-[1_1_340px] rounded-[20px] border border-border bg-surface p-[22px]">
 			<div class="mb-4.5 flex items-center justify-between">
-				<div class="text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">Hot tokens</div>
+				<div class="text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">
+					Hot tokens
+				</div>
 			</div>
 			{#if loading}
 				<p class="text-xs text-text-muted">Loading tokens…</p>
@@ -304,12 +352,12 @@
 					{#each tokens.slice(0, 5) as token (token.currency_id)}
 						<div class="flex items-center justify-between py-2.5">
 							<div class="flex items-center gap-2.5">
-								<div
-									class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-text"
-									style="background: {avatarBg(token.symbol ?? '')}"
-								>
-									{(token.symbol ?? '?').charAt(0).toUpperCase()}
-								</div>
+								<TokenIcon
+									symbol={token.symbol}
+									size={28}
+									bg={avatarBg(token.symbol ?? '')}
+									fg="var(--color-ink)"
+								/>
 								<div>
 									<p class="text-[13px] font-bold">{(token.symbol ?? '').toUpperCase()}</p>
 									<p class="text-[11px] text-text-muted">{token.name}</p>
@@ -326,8 +374,9 @@
 								{#if token.change24h != null}
 									<span
 										class="font-mono text-[11px] font-bold"
-										style="color:{token.change24h >= 0 ? 'var(--color-mint-ink)' : 'var(--color-red-ink)'}"
-										>{formatPct(token.change24h)}</span
+										style="color:{token.change24h >= 0
+											? 'var(--color-mint-ink)'
+											: 'var(--color-red-ink)'}">{formatPct(token.change24h)}</span
 									>
 								{/if}
 							</div>
@@ -343,7 +392,9 @@
 		</div>
 
 		<div class="min-w-0 flex-[1_1_340px] rounded-[20px] border border-border bg-surface p-[22px]">
-			<div class="mb-4.5 text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">Scout report</div>
+			<div class="mb-4.5 text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">
+				Scout report
+			</div>
 			{#if loading}
 				<p class="text-xs text-text-muted">Loading news…</p>
 			{:else if news.length === 0}
@@ -368,7 +419,9 @@
 
 	<div class="rounded-[20px] border border-border bg-surface p-[22px]">
 		<div class="mb-4.5 flex flex-wrap items-center justify-between gap-3">
-			<div class="text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">My contests</div>
+			<div class="text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">
+				My contests
+			</div>
 			<div class="flex gap-2">
 				<button
 					class="cursor-pointer rounded-full bg-primary-muted px-3.5 py-1.5 text-xs font-bold text-primary-ink"
@@ -382,7 +435,7 @@
 				<button
 					class="cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-bold"
 					style="background:rgba(104,194,168,0.14);color:var(--color-mint-ink)"
-					onclick={() => createContest('daily', 'paper')}>+ Practice</button
+					onclick={() => createContest('daily', 'paper')}>+ Scrimmage</button
 				>
 			</div>
 		</div>
@@ -399,7 +452,8 @@
 					<div class="flex flex-wrap items-center justify-between gap-2.5 py-3">
 						<div class="flex flex-wrap items-center gap-2.5">
 							{#if c.status === 'resolved'}
-								<span class="rounded-full bg-surface-alt px-2.5 py-1 text-[10px] font-bold text-text-muted uppercase"
+								<span
+									class="rounded-full bg-surface-alt px-2.5 py-1 text-[10px] font-bold text-text-muted uppercase"
 									>Resolved</span
 								>
 							{:else if c.status === 'live'}
@@ -410,23 +464,35 @@
 							{:else}
 								<span
 									class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase"
-									style="background:rgba(247,201,120,0.16);color:var(--color-warning-ink)">Open</span
+									style="background:rgba(247,201,120,0.16);color:var(--color-warning-ink)"
+									>Open</span
 								>
 							{/if}
-							<span class="text-[13px] font-bold">{c.type === 'weekly' ? 'Weekly' : 'Daily'} Contest</span>
+							<span class="text-[13px] font-bold"
+								>{c.type === 'weekly' ? 'Weekly' : 'Daily'} Contest</span
+							>
 							{#if c.isPaper}
 								<span
 									class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase"
-									style="background:rgba(104,194,168,0.14);color:var(--color-mint-ink)">Practice</span
+									style="background:rgba(104,194,168,0.14);color:var(--color-mint-ink)"
+									>Scrimmage</span
 								>
 							{/if}
-							<span class="font-mono text-[11px] text-text-muted">{String(c.id ?? '').slice(0, 8)}…</span>
+							<span class="font-mono text-[11px] text-text-muted"
+								>{String(c.id ?? '').slice(0, 8)}…</span
+							>
 						</div>
 						{#if c.status === 'resolved'}
 							<a
 								href={`/contest/result?contestId=${c.id}`}
 								class="rounded-full bg-primary-muted px-3.5 py-1.5 text-xs font-bold text-primary-ink no-underline"
 								>View result</a
+							>
+						{:else if c.myLineupLocked}
+							<a
+								href={`/game/${c.id}`}
+								class="rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-text no-underline"
+								>{c.status === 'live' ? 'Watch race' : 'Waiting for opponent'}</a
 							>
 						{:else}
 							<a
@@ -440,4 +506,52 @@
 			</div>
 		{/if}
 	</div>
+
+	{#if myLobbies.length > 0}
+		<div class="mt-4.5 rounded-[20px] border border-border bg-surface p-[22px]">
+			<div class="mb-4.5 text-[11px] font-extrabold tracking-[0.12em] text-text-muted uppercase">
+				My multiplayer &amp; tournaments
+			</div>
+			<div class="flex flex-col divide-y divide-border">
+				{#each myLobbies as l, i (String(l.id ?? i))}
+					<div class="flex flex-wrap items-center justify-between gap-2.5 py-3">
+						<div class="flex flex-wrap items-center gap-2.5">
+							<span
+								class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase"
+								style={l.status === 'live'
+									? 'background:rgba(104,194,168,0.14);color:var(--color-mint-ink)'
+									: 'background:rgba(247,201,120,0.16);color:var(--color-warning-ink)'}
+								>{l.status}</span
+							>
+							<span class="text-[13px] font-bold">
+								{#if l.tournamentId}
+									{l.tournamentName ?? 'Tournament'} &middot; {l.tournamentStage === 1
+										? 'Final'
+										: 'Qualifier'}
+								{:else}
+									Multiplayer lobby
+								{/if}
+							</span>
+							<span class="font-mono text-[11px] text-text-muted"
+								>{String(l.id ?? '').slice(0, 8)}…</span
+							>
+						</div>
+						{#if l.myLineupLocked}
+							<a
+								href={`/lobby/${l.id}/result`}
+								class="rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-text no-underline"
+								>{l.status === 'live' ? 'Watch' : 'Waiting for others'}</a
+							>
+						{:else}
+							<a
+								href={`/draft?lobbyId=${l.id}`}
+								class="rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-text no-underline"
+								>Continue draft</a
+							>
+						{/if}
+					</div>
+				{/each}
+			</div>
+		</div>
+	{/if}
 </div>
