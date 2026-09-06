@@ -10,6 +10,16 @@
 			href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
 			rel="stylesheet"
 		/>
+		<style>
+			/* ssr is disabled app-wide (wallet SDKs break under Node SSR), so the
+			   initial HTML response has no content until the JS bundle hydrates.
+			   Without this, that gap renders as a jarring white flash instead of
+			   the app's actual background. */
+			body {
+				margin: 0;
+				background: #f5fafa;
+			}
+		</style>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
